@@ -40,6 +40,69 @@
       overflow: hidden;
     }
 
+    .app-backdrop {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .app-backdrop-bg {
+      position: absolute;
+      inset: -50%;
+      z-index: 0;
+      background: conic-gradient(from var(--angle, 0deg) at 50% 50%,
+        var(--c1) 0deg, var(--c2) 120deg, var(--c3) 240deg, var(--c1) 360deg);
+      animation: spinBg 12s linear infinite;
+      opacity: 0.85;
+    }
+
+    .app-backdrop-bg::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 50% 120%, transparent 30%, rgba(0,0,0,0.75) 70%);
+    }
+
+    .app-backdrop-noise {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      opacity: 0.07;
+      pointer-events: none;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+
+    .app-backdrop-vignette {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+      background: radial-gradient(
+        ellipse 55% 50% at 50% 48%,
+        transparent 0%,
+        rgba(0, 0, 0, 0.35) 55%,
+        rgba(0, 0, 0, 0.72) 100%
+      );
+    }
+
+    @media (min-width: 900px) {
+      .app-backdrop-vignette {
+        background: radial-gradient(
+          ellipse 42% 48% at 50% 50%,
+          transparent 0%,
+          rgba(0, 0, 0, 0.45) 50%,
+          rgba(0, 0, 0, 0.82) 100%
+        );
+      }
+    }
+
+    .app-shell > :not(.app-backdrop) {
+      position: relative;
+      z-index: 1;
+    }
+
     .top-bar {
       display: flex;
       align-items: center;
@@ -234,15 +297,9 @@
       }
     }
 
-    /* Animated bg */
+    /* Slide bg layers — rendered on .app-backdrop for full-viewport coverage */
     .slide-bg {
-      position: absolute;
-      inset: -50%;
-      z-index: 0;
-      background: conic-gradient(from var(--angle, 0deg) at 50% 50%,
-        var(--c1) 0deg, var(--c2) 120deg, var(--c3) 240deg, var(--c1) 360deg);
-      animation: spinBg 12s linear infinite;
-      opacity: 0.85;
+      display: none;
     }
 
     .slide-bg::after {
@@ -260,37 +317,9 @@
       inherits: false;
     }
 
-    .slide-noise {
-      position: absolute;
-      inset: 0;
-      z-index: 1;
-      opacity: 0.07;
-      pointer-events: none;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-    }
-
+    .slide-noise,
     .slide-vignette {
-      position: absolute;
-      inset: 0;
-      z-index: 2;
-      pointer-events: none;
-      background: radial-gradient(
-        ellipse 55% 50% at 50% 48%,
-        transparent 0%,
-        rgba(0, 0, 0, 0.35) 55%,
-        rgba(0, 0, 0, 0.72) 100%
-      );
-    }
-
-    @media (min-width: 900px) {
-      .slide-vignette {
-        background: radial-gradient(
-          ellipse 42% 48% at 50% 50%,
-          transparent 0%,
-          rgba(0, 0, 0, 0.45) 50%,
-          rgba(0, 0, 0, 0.82) 100%
-        );
-      }
+      display: none;
     }
 
     .watermark {
@@ -1028,6 +1057,11 @@
   </div>
 
   <div class="app-shell fx-hidden" id="app">
+    <div class="app-backdrop" id="appBackdrop" aria-hidden="true">
+      <div class="app-backdrop-bg" id="appBackdropBg"></div>
+      <div class="app-backdrop-noise"></div>
+      <div class="app-backdrop-vignette"></div>
+    </div>
     <div class="top-bar">
       <span class="brand-chip" id="periodChip">Weekly Wrap</span>
     </div>
@@ -1187,6 +1221,22 @@
       const cardId = slide.card?.id;
       if (cardId && CARD_THEMES[cardId]) return CARD_THEMES[cardId];
       return slide.card?.section ?? "intro";
+    }
+
+    function applyAppTheme(theme, animate = false) {
+      const backdrop = document.getElementById("appBackdrop");
+      if (!backdrop) return;
+      backdrop.style.setProperty("--c1", theme.c1);
+      backdrop.style.setProperty("--c2", theme.c2);
+      backdrop.style.setProperty("--c3", theme.c3);
+      backdrop.style.setProperty("--accent", theme.accent);
+      const bg = document.getElementById("appBackdropBg");
+      if (!bg) return;
+      if (animate) {
+        gsap.fromTo(bg, { opacity: 0.5, scale: 1.04 }, { opacity: 0.85, scale: 1, duration: 0.55, ease: "power2.out" });
+      } else {
+        gsap.set(bg, { opacity: 0.85, scale: 1 });
+      }
     }
 
     function buildSlides() {
@@ -1362,11 +1412,11 @@
       const slide = slides[i];
       if (!slide) return;
       const theme = THEMES[themeKey(slide)] ?? THEMES.intro;
+      applyAppTheme(theme);
       const el = createSlideElement(slide, theme);
       stage.appendChild(el);
 
       gsap.set(el, { opacity: 1 });
-      gsap.set(el.querySelector(".slide-bg"), { opacity: 0.85, scale: 1 });
       gsap.set(el.querySelector(".content-frame-inner"), {
         opacity: 1, y: 0, scale: 1, filter: "blur(0px)",
       });
@@ -1426,6 +1476,7 @@
       const slide = slides[i];
       const tk = themeKey(slide);
       const theme = THEMES[tk] ?? THEMES.intro;
+      applyAppTheme(theme, dir !== 0);
       const stage = document.getElementById("stage");
       const old = stage.querySelector(".slide");
       const isTransition = Boolean(old && dir !== 0);
@@ -1438,10 +1489,8 @@
         stage.appendChild(el);
 
         const inner = el.querySelector(".content-frame-inner");
-        const bg = el.querySelector(".slide-bg");
 
         gsap.set(el, { opacity: 1 });
-        gsap.fromTo(bg, { opacity: 0, scale: 1.06 }, { opacity: 0.85, scale: 1, duration: 0.55, ease: "power2.out" });
         gsap.fromTo(inner, {
           y: dir >= 0 ? 48 : -48,
           opacity: 0,
@@ -1613,7 +1662,7 @@
     function runOutroCelebration(el, theme) {
       celebrateOutro(theme);
 
-      const bg = el.querySelector(".slide-bg");
+      const bg = document.getElementById("appBackdropBg");
       if (bg) {
         gsap.fromTo(bg, { scale: 1.08 }, {
           scale: 1.02,
