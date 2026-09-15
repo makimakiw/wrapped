@@ -1148,7 +1148,7 @@
       document.getElementById("stage").classList.toggle("nav-locked", locked);
       document.getElementById("navHint").classList.toggle("hidden", locked);
       document.getElementById("restartBtn").classList.toggle("hidden", !started && index === 0);
-      document.getElementById("musicBtn").classList.toggle("hidden", locked || !trackUris.length);
+      document.getElementById("musicBtn").classList.toggle("hidden", !trackUris.length);
     }
 
     function updateMusicBtn() {
