@@ -1122,13 +1122,14 @@
       document.getElementById("toggleSources").hidden = false;
       document.getElementById("loader").classList.add("hide");
       document.getElementById("app").classList.remove("fx-hidden");
-      renderProgress();
-      showSlide(0, 0);
       trackUris = data.music?.tracks ?? [];
+      renderProgress();
       bindNav();
       bindSources();
       bindRestart();
       bindMusic();
+      showSlide(0, 0);
+      updateNavLock();
       updateMusicBtn();
       if (window.lucide) lucide.createIcons();
     }
@@ -1491,9 +1492,10 @@
         });
       });
 
-      if (slide.type === "intro" || slide.type === "outro") burst(theme, slide.type === "outro" ? 2 : 1);
-      if (slide.type === "card" && ["time_hero","customer_champion","code_flow","cursor_pulse"].includes(slide.card.id)) {
-        setTimeout(() => burst(theme, 0.9), 500);
+      if (slide.type === "intro" || slide.type === "outro") {
+        burst(theme, slide.type === "outro" ? 2 : 1);
+      } else if (slide.type === "card") {
+        setTimeout(() => burst(theme, 0.85), 480);
       }
 
       if (lockNav) setTimeout(() => { animating = false; }, 720);
