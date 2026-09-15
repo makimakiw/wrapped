@@ -1322,12 +1322,20 @@
           updateMusicBtn();
         });
         audioEl.addEventListener("pause", () => {
+          if (!musicMuted && audioEl.ended) return;
           musicPlaying = false;
           updateMusicBtn();
         });
         audioEl.addEventListener("ended", () => {
-          musicPlaying = false;
-          updateMusicBtn();
+          if (musicMuted) {
+            musicPlaying = false;
+            updateMusicBtn();
+            return;
+          }
+          playNextTrack();
+        });
+        audioEl.addEventListener("error", () => {
+          if (!musicMuted) playNextTrack();
         });
       }
       return audioEl;
@@ -1337,17 +1345,38 @@
       return musicTracks[Math.floor(Math.random() * musicTracks.length)];
     }
 
-    function playMusic() {
-      if (!musicTracks.length || musicMuted) return;
-      const track = currentTrack?.preview ? currentTrack : pickRandomTrack();
-      if (!track?.preview) return;
+    function pickNextTrack(excludeUri) {
+      if (!musicTracks.length) return null;
+      if (musicTracks.length === 1) return musicTracks[0];
+      let candidate;
+      for (let i = 0; i < 12; i++) {
+        candidate = pickRandomTrack();
+        if (candidate?.uri !== excludeUri) return candidate;
+      }
+      return candidate;
+    }
+
+    function startTrack(track) {
+      if (!track?.preview || musicMuted) return;
       currentTrack = track;
       const audio = ensureAudio();
-      if (audio.src !== track.preview) audio.src = track.preview;
+      audio.src = track.preview;
+      audio.load();
       audio.play().catch(() => {
         musicPlaying = false;
         updateMusicBtn();
       });
+    }
+
+    function playMusic() {
+      if (!musicTracks.length || musicMuted) return;
+      const track = currentTrack?.preview ? currentTrack : pickNextTrack();
+      startTrack(track);
+    }
+
+    function playNextTrack() {
+      if (!musicTracks.length || musicMuted) return;
+      startTrack(pickNextTrack(currentTrack?.uri));
     }
 
     function stopMusic() {
