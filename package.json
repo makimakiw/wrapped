@@ -1,0 +1,12 @@
+{
+  "name": "third-act-weekly-wrap",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Spotify Wrapped-style weekly summary for Third Act",
+  "scripts": {
+    "fetch": "node scripts/build.mjs",
+    "serve": "npx --yes serve public -p 3456",
+    "teams:login": "bash scripts/teams-login.sh"
+  },
+  "type": "module"
+}

@@ -1,0 +1,36 @@
+╔══════════════════════════════════════════════════════════════╗
+║  TEAMS-INLOGGNING — Third Act Weekly Wrap                    ║
+╚══════════════════════════════════════════════════════════════╝
+
+STEG 0 — Öppna terminal i Cursor
+──────────────────────────────────
+  Mac:     Ctrl + `   (backtick, tangenten under Esc)
+           eller: View → Terminal
+           eller: Cmd + J (öppna panelen nederst)
+
+STEG 1 — Klistra in och kör:
+──────────────────────────────────
+  cd /Users/maxwroblewski/Cursor-projects/third-act-weekly-wrap
+  npm run teams:login
+
+STEG 2 — I wizarden (piltangenter + Enter)
+──────────────────────────────────
+  → Create a new app registration
+  → Full set of permissions
+  → Interactive use
+  → Yes (bekräfta)
+
+STEG 3 — Device code
+──────────────────────────────────
+  Terminalen visar en kod, t.ex. ABCD1234
+  Gå till: https://microsoft.com/devicelogin
+  Logga in med max.wroblewski@thirdact.se
+
+STEG 4 — Säg "klar" i chatten
+──────────────────────────────────
+  Då uppdateras Wrapped med Teams-data.
+
+Om setup failar (saknar az):
+  brew install azure-cli
+  az login
+  npm run teams:login

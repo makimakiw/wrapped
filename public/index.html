@@ -1,0 +1,1616 @@
+<!DOCTYPE html>
+<html lang="sv">
+<!-- Third Act Weekly Wrap — full-screen story UI -->
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Third Act · Weekly Wrap 2026</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <script>
+    window.__spotifyReadyQueue = [];
+    window.onSpotifyIframeApiReady = function (IFrameAPI) {
+      window.__spotifyIFrameAPI = IFrameAPI;
+      window.__spotifyReadyQueue.forEach((fn) => fn(IFrameAPI));
+      window.__spotifyReadyQueue = [];
+    };
+  </script>
+  <script src="https://open.spotify.com/embed/iframe-api/v1" async></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      font-family: "Outfit", system-ui, sans-serif;
+      background: #000;
+      color: #fff;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    #particleCanvas {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .app-shell {
+      position: relative;
+      z-index: 1;
+      height: 100dvh;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: max(12px, env(safe-area-inset-top)) 20px 8px;
+      flex-shrink: 0;
+      z-index: 20;
+      width: 100%;
+      max-width: 520px;
+      margin: 0 auto;
+    }
+
+    .brand-chip {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      padding: 6px 12px;
+      border-radius: 99px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+    }
+
+    /* Story progress — Spotify/IG style */
+    .progress-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 20px 10px;
+      flex-shrink: 0;
+      z-index: 20;
+      width: 100%;
+      max-width: 520px;
+      margin: 0 auto;
+    }
+
+    .story-progress {
+      display: flex;
+      gap: 4px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .restart-btn {
+      flex-shrink: 0;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(255, 255, 255, 0.06);
+      color: rgba(255, 255, 255, 0.55);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: color 0.2s, border-color 0.2s, background 0.2s, opacity 0.2s;
+    }
+
+    .restart-btn svg { width: 16px; height: 16px; }
+
+    .restart-btn:hover {
+      color: rgba(255, 255, 255, 0.95);
+      border-color: rgba(255, 255, 255, 0.28);
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    .restart-btn.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .story-progress .seg {
+      flex: 1;
+      height: 3px;
+      border-radius: 99px;
+      background: rgba(255,255,255,0.18);
+      overflow: hidden;
+    }
+
+    .story-progress .seg i {
+      display: block;
+      height: 100%;
+      width: 0%;
+      border-radius: inherit;
+      background: #fff;
+      box-shadow: 0 0 12px rgba(255,255,255,0.6);
+    }
+
+    .story-progress .seg.done i { width: 100%; opacity: 0.45; }
+    .story-progress .seg.current i { width: 0; opacity: 0.35; }
+    .story-progress .seg.active i {
+      width: 100%;
+      opacity: 1;
+    }
+
+    @keyframes storyFill { to { width: 100%; } }
+
+    .stage {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      min-height: 0;
+      isolation: isolate;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      overflow: hidden;
+      will-change: opacity, transform;
+    }
+
+    /* Glass card — content centered, effects full-bleed behind */
+    .content-frame {
+      position: relative;
+      z-index: 3;
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      padding: 8px 20px max(16px, env(safe-area-inset-bottom));
+      min-height: 0;
+    }
+
+    .content-frame-inner {
+      width: 100%;
+      max-width: min(460px, 100%);
+      max-height: min(720px, calc(100dvh - 108px));
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: clamp(24px, 5vw, 36px) clamp(20px, 4vw, 32px);
+      border-radius: 32px;
+      background: rgba(8, 6, 14, 0.52);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      backdrop-filter: blur(28px) saturate(1.2);
+      -webkit-backdrop-filter: blur(28px) saturate(1.2);
+      box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.05) inset,
+        0 32px 100px rgba(0, 0, 0, 0.55),
+        0 0 80px color-mix(in srgb, var(--accent, #1ed760) 12%, transparent);
+    }
+
+    @media (min-width: 900px) {
+      .content-frame-inner {
+        max-width: 480px;
+        padding: 40px 36px 44px;
+        border-radius: 36px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .content-frame {
+        padding-left: 14px;
+        padding-right: 14px;
+      }
+      .content-frame-inner {
+        border-radius: 26px;
+        max-height: calc(100dvh - 96px);
+      }
+    }
+
+    /* Animated bg */
+    .slide-bg {
+      position: absolute;
+      inset: -50%;
+      z-index: 0;
+      background: conic-gradient(from var(--angle, 0deg) at 50% 50%,
+        var(--c1) 0deg, var(--c2) 120deg, var(--c3) 240deg, var(--c1) 360deg);
+      animation: spinBg 12s linear infinite;
+      opacity: 0.85;
+    }
+
+    .slide-bg::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 50% 120%, transparent 30%, rgba(0,0,0,0.75) 70%);
+    }
+
+    @keyframes spinBg { to { --angle: 360deg; } }
+
+    @property --angle {
+      syntax: "<angle>";
+      initial-value: 0deg;
+      inherits: false;
+    }
+
+    .slide-noise {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      opacity: 0.07;
+      pointer-events: none;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+
+    .slide-vignette {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+      background: radial-gradient(
+        ellipse 55% 50% at 50% 48%,
+        transparent 0%,
+        rgba(0, 0, 0, 0.35) 55%,
+        rgba(0, 0, 0, 0.72) 100%
+      );
+    }
+
+    @media (min-width: 900px) {
+      .slide-vignette {
+        background: radial-gradient(
+          ellipse 42% 48% at 50% 50%,
+          transparent 0%,
+          rgba(0, 0, 0, 0.45) 50%,
+          rgba(0, 0, 0, 0.82) 100%
+        );
+      }
+    }
+
+    .watermark {
+      position: fixed;
+      z-index: 1;
+      font-family: "Bebas Neue", sans-serif;
+      font-size: clamp(10rem, 28vw, 22rem);
+      line-height: 0.85;
+      color: rgba(255,255,255,0.05);
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -42%);
+      text-align: center;
+      pointer-events: none;
+      letter-spacing: -0.02em;
+      width: 100%;
+    }
+
+    .slide-body {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      gap: 0;
+    }
+
+    .icon-hero {
+      width: clamp(72px, 20vw, 92px);
+      height: clamp(72px, 20vw, 92px);
+      margin: 0 auto 14px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(
+        circle at 50% 55%,
+        color-mix(in srgb, var(--accent) 14%, transparent) 0%,
+        transparent 72%
+      );
+      border: 1px solid color-mix(in srgb, var(--accent) 24%, transparent);
+      color: color-mix(in srgb, var(--accent) 80%, #fff);
+      animation: iconHeroFloat 4.2s ease-in-out infinite, iconHeroPulse 3.6s ease-in-out infinite;
+    }
+
+    .icon-hero svg {
+      width: 40%;
+      height: 40%;
+      stroke-width: 1.55;
+    }
+
+    .icon-hero.quote-icon {
+      width: clamp(56px, 16vw, 72px);
+      height: clamp(56px, 16vw, 72px);
+      margin-bottom: 10px;
+    }
+
+    @keyframes iconHeroFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+    }
+
+    @keyframes iconHeroPulse {
+      0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 0%, transparent); }
+      50% { box-shadow: 0 0 20px 1px color-mix(in srgb, var(--accent) 16%, transparent); }
+    }
+
+    .icon-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      align-self: center;
+      padding: 8px 14px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      background: rgba(0,0,0,0.35);
+      border: 1px solid rgba(255,255,255,0.2);
+      backdrop-filter: blur(12px);
+      margin-bottom: 16px;
+    }
+
+    .icon-badge svg { width: 16px; height: 16px; stroke: var(--accent, #1ed760); }
+
+    .eyebrow {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      opacity: 0.7;
+      margin-bottom: 8px;
+    }
+
+    .headline {
+      font-family: "Bebas Neue", sans-serif;
+      font-size: clamp(2.8rem, 11vw, 4.2rem);
+      line-height: 0.92;
+      letter-spacing: 0.02em;
+      margin-bottom: 16px;
+      text-shadow: 0 4px 40px rgba(0,0,0,0.35);
+    }
+
+    .hero-stat {
+      font-family: "Bebas Neue", sans-serif;
+      font-size: clamp(5rem, 22vw, 9rem);
+      line-height: 0.85;
+      letter-spacing: -0.02em;
+      background: linear-gradient(180deg, #fff 0%, var(--accent) 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 8px 32px color-mix(in srgb, var(--accent) 40%, transparent));
+    }
+
+    .hero-stat-label {
+      font-size: clamp(1.1rem, 4vw, 1.5rem);
+      font-weight: 600;
+      opacity: 0.75;
+      margin-top: 4px;
+      margin-bottom: 20px;
+    }
+
+    .winner-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 20px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.22);
+      backdrop-filter: blur(16px);
+      font-size: clamp(1.2rem, 4.5vw, 1.65rem);
+      font-weight: 800;
+      max-width: 100%;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.25);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .winner-pill::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.15) 50%, transparent 60%);
+      transform: translateX(-100%);
+      animation: shimmer 3s ease-in-out infinite;
+    }
+
+    @keyframes shimmer {
+      0%, 100% { transform: translateX(-100%); }
+      50% { transform: translateX(100%); }
+    }
+
+    .winner-pill .crown { font-size: 1.4em; }
+
+    .detail-text {
+      margin-top: 20px;
+      font-size: 0.95rem;
+      line-height: 1.5;
+      opacity: 0.65;
+      max-width: 28em;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    /* INTRO */
+    .slide.intro .slide-body { justify-content: center; }
+
+    .intro-ring {
+      width: clamp(140px, 40vw, 200px);
+      height: clamp(140px, 40vw, 200px);
+      border-radius: 50%;
+      border: 3px solid rgba(255,255,255,0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 24px;
+      position: relative;
+      animation: ringPulse 2.5s ease-in-out infinite;
+    }
+
+    .intro-ring::before {
+      content: "";
+      position: absolute;
+      inset: -8px;
+      border-radius: 50%;
+      border: 2px dashed rgba(255,255,255,0.2);
+      animation: ringSpin 20s linear infinite;
+    }
+
+    @keyframes ringPulse {
+      0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(30,215,96,0.3); }
+      50% { transform: scale(1.04); box-shadow: 0 0 60px 10px rgba(30,215,96,0.15); }
+    }
+
+    @keyframes ringSpin { to { transform: rotate(360deg); } }
+
+    .intro-ring-text {
+      text-align: center;
+      padding: 0 12px;
+    }
+
+    .intro-period {
+      font-family: "Outfit", sans-serif;
+      font-size: clamp(0.85rem, 3.5vw, 1rem);
+      font-weight: 700;
+      line-height: 1.25;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, #1ed760, #ffd166);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .intro-title {
+      font-family: "Bebas Neue", sans-serif;
+      font-size: clamp(3.5rem, 14vw, 5.5rem);
+      line-height: 0.9;
+      margin: 12px 0;
+    }
+
+    .intro-sub {
+      font-size: 1.1rem;
+      opacity: 0.7;
+      font-weight: 500;
+    }
+
+    .tap-cta {
+      margin-top: 32px;
+      padding: 16px 32px;
+      border-radius: 99px;
+      background: #fff;
+      color: #000;
+      font-weight: 800;
+      font-size: 14px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 8px 40px rgba(255,255,255,0.25);
+      animation: ctaBounce 2s ease-in-out infinite;
+    }
+
+    @keyframes ctaBounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-4px); }
+    }
+
+    /* QUOTE */
+    .quote-layout .slide-body { justify-content: center; align-items: center; }
+    .quote-mark {
+      font-family: "Bebas Neue", sans-serif;
+      font-size: clamp(6rem, 25vw, 10rem);
+      line-height: 0.6;
+      opacity: 0.25;
+      margin-bottom: -20px;
+    }
+    .quote-text {
+      font-size: clamp(1.15rem, 4.2vw, 1.55rem);
+      font-weight: 600;
+      line-height: 1.4;
+      font-style: italic;
+      max-width: 100%;
+      overflow-wrap: break-word;
+      word-break: break-word;
+      display: -webkit-box;
+      -webkit-line-clamp: 5;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      text-align: center;
+    }
+    .quote-author {
+      margin-top: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      font-weight: 700;
+      font-size: 1.1rem;
+    }
+    .quote-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--c2));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 18px;
+    }
+
+    .quote-reactions {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      margin: 18px 0 6px;
+    }
+
+    .reaction-bubbles {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding-left: 0;
+    }
+
+    .reaction-bubble {
+      --overlap: 12px;
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.48);
+      border: 2px solid rgba(255, 255, 255, 0.16);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.35rem;
+      margin-left: calc(var(--i) * -1 * var(--overlap));
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+      transform: scale(0);
+    }
+
+    .reaction-bubble:first-child { margin-left: 0; }
+
+    .reaction-total {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+
+    .reaction-count {
+      font-family: "Bebas Neue", sans-serif;
+      font-size: clamp(1.75rem, 7vw, 2.25rem);
+      letter-spacing: 0.03em;
+      line-height: 1;
+      background: linear-gradient(135deg, var(--accent), #fff);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .reaction-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      opacity: 0.55;
+      font-weight: 600;
+    }
+
+    .cursor-model-line {
+      margin-top: 14px;
+      margin-bottom: 0;
+      font-size: clamp(0.95rem, 3.6vw, 1.15rem);
+      font-weight: 600;
+      opacity: 0.85;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+
+    .cursor-model-line strong {
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    /* CURSOR DASHBOARD */
+    .dash-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+      max-width: 400px;
+      margin: 0 auto;
+    }
+    .dash-row {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: center;
+      text-align: center;
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: rgba(0,0,0,0.4);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .dash-row.lead {
+      border-color: color-mix(in srgb, var(--accent) 50%, transparent);
+      box-shadow: 0 0 30px color-mix(in srgb, var(--accent) 15%, transparent);
+    }
+    .dash-name { font-weight: 700; font-size: 0.9rem; }
+    .dash-val { font-weight: 800; font-size: 0.95rem; color: var(--accent); }
+    .dash-bar {
+      width: 100%;
+      height: 6px;
+      border-radius: 99px;
+      background: rgba(255,255,255,0.1);
+      overflow: hidden;
+    }
+    .dash-bar span {
+      display: block;
+      height: 100%;
+      width: 0;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--accent), #fff);
+      box-shadow: 0 0 12px var(--accent);
+    }
+
+    /* PROJECTS BENTO */
+    .bento {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      width: 100%;
+      max-width: 400px;
+      margin: 0 auto;
+    }
+    .bento-item {
+      padding: 14px;
+      border-radius: 16px;
+      background: rgba(0,0,0,0.35);
+      border: 1px solid rgba(255,255,255,0.1);
+      min-height: 72px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+    .bento-item.wide { grid-column: 1 / -1; }
+    .bento-item .repo { font-weight: 700; font-size: 0.85rem; word-break: break-all; }
+    .bento-item .meta { font-size: 0.7rem; opacity: 0.55; margin-top: 6px; }
+
+    /* OUTRO */
+    .slide.outro .slide-body { justify-content: center; }
+
+    .slide-body.stack-top { justify-content: center; }
+    .outro-emoji { font-size: 5rem; margin-bottom: 16px; }
+
+    .tap-zones {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      z-index: 10;
+    }
+    .tap-zones div { flex: 1; }
+
+    .footer-dock {
+      position: fixed;
+      bottom: max(12px, env(safe-area-inset-bottom));
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 40;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .music-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      background: rgba(255, 255, 255, 0.08);
+      color: rgba(255, 255, 255, 0.82);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      backdrop-filter: blur(14px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+      transition: color 0.2s, border-color 0.2s, background 0.2s, transform 0.2s, opacity 0.2s;
+    }
+
+    .music-btn svg { width: 20px; height: 20px; }
+
+    .music-btn:hover {
+      color: #fff;
+      border-color: rgba(30, 215, 96, 0.45);
+      background: rgba(30, 215, 96, 0.12);
+      transform: scale(1.05);
+    }
+
+    .music-btn.playing {
+      border-color: rgba(30, 215, 96, 0.35);
+      box-shadow: 0 0 0 1px rgba(30, 215, 96, 0.12), 0 8px 24px rgba(0, 0, 0, 0.28);
+    }
+
+    .music-btn.muted { color: rgba(255, 255, 255, 0.42); }
+
+    .music-btn.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .spotify-player-host {
+      position: fixed;
+      width: 0;
+      height: 0;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      clip-path: inset(50%);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .spotify-player-host iframe {
+      position: absolute !important;
+      left: -9999px !important;
+      top: -9999px !important;
+      width: 1px !important;
+      height: 1px !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+
+    .nav-hint {
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      opacity: 0.35;
+      pointer-events: none;
+    }
+
+    .nav-hint.hidden { opacity: 0; visibility: hidden; }
+
+    .stage.nav-locked .tap-zones { pointer-events: none; }
+
+    .sources-btn {
+      padding: 8px 16px;
+      border-radius: 99px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(0, 0, 0, 0.45);
+      color: rgba(255, 255, 255, 0.55);
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      backdrop-filter: blur(12px);
+      cursor: pointer;
+      transition: color 0.2s, border-color 0.2s, background 0.2s;
+    }
+
+    .sources-btn:hover {
+      color: rgba(255, 255, 255, 0.9);
+      border-color: rgba(255, 255, 255, 0.28);
+      background: rgba(0, 0, 0, 0.6);
+    }
+
+    .sources-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 80;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding: 16px;
+      background: rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(6px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+
+    .sources-backdrop.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .sources-sheet {
+      width: min(480px, 100%);
+      max-height: min(70vh, 520px);
+      overflow: auto;
+      padding: 20px 20px 24px;
+      border-radius: 24px 24px 20px 20px;
+      background: rgba(12, 8, 20, 0.92);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 -8px 60px rgba(0, 0, 0, 0.5);
+      transform: translateY(16px);
+      transition: transform 0.28s ease;
+    }
+
+    .sources-backdrop.open .sources-sheet {
+      transform: translateY(0);
+    }
+
+    .sources-sheet h3 {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+      padding-right: 36px;
+    }
+
+    .sources-sheet pre {
+      font-size: 11px;
+      line-height: 1.45;
+      color: rgba(255, 255, 255, 0.72);
+      background: rgba(0, 0, 0, 0.35);
+      padding: 12px;
+      border-radius: 12px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .sources-close {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      width: 32px;
+      height: 32px;
+      border: none;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+      font-size: 20px;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .sources-sheet { position: relative; }
+
+    .loading-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      background: #000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+    }
+
+    .loading-screen.hide { opacity: 0; pointer-events: none; transition: opacity 0.6s; }
+
+    .load-bar {
+      width: 120px;
+      height: 4px;
+      border-radius: 99px;
+      background: rgba(255,255,255,0.1);
+      overflow: hidden;
+    }
+
+    .load-bar i {
+      display: block;
+      height: 100%;
+      width: 0%;
+      background: #1ed760;
+      animation: storyFill 1.2s ease forwards;
+    }
+
+    .fx-hidden { visibility: hidden; }
+  </style>
+</head>
+<body>
+  <canvas id="particleCanvas"></canvas>
+
+  <div class="loading-screen" id="loader">
+    <div class="load-bar"><i></i></div>
+    <p style="font-weight:600;opacity:0.6;font-size:14px">Laddar vår vecka…</p>
+  </div>
+
+  <div class="app-shell fx-hidden" id="app">
+    <div class="top-bar">
+      <span class="brand-chip" id="periodChip">Weekly Wrap</span>
+    </div>
+    <div class="progress-row">
+      <div class="story-progress" id="progress"></div>
+      <button type="button" class="restart-btn hidden" id="restartBtn" aria-label="Börja om" title="Börja om">
+        <i data-lucide="rotate-ccw"></i>
+      </button>
+    </div>
+    <div class="stage nav-locked" id="stage">
+      <div class="tap-zones"><div data-dir="-1"></div><div data-dir="1"></div></div>
+    </div>
+    <div class="footer-dock">
+      <button type="button" class="music-btn hidden" id="musicBtn" aria-label="Ljud av" title="Ljud av">
+        <i data-lucide="volume-2"></i>
+      </button>
+      <div class="nav-hint hidden" id="navHint">Tryck eller svep · mellanslag</div>
+      <button type="button" class="sources-btn" id="toggleSources" hidden>Datakällor</button>
+    </div>
+    <div class="spotify-player-host" id="spotifyEmbedHost" aria-hidden="true"></div>
+  </div>
+
+  <div class="sources-backdrop" id="sourcesBackdrop" aria-hidden="true">
+    <div class="sources-sheet" role="dialog" aria-labelledby="sourcesTitle">
+      <button type="button" class="sources-close" id="closeSources" aria-label="Stäng">×</button>
+      <h3 id="sourcesTitle">Datakällor & äkthet</h3>
+      <pre id="sourcesPre"></pre>
+    </div>
+  </div>
+
+  <script>
+    const THEMES = {
+      intro:   { c1: "#1a0533", c2: "#1ed760", c3: "#ff6b35", accent: "#1ed760" },
+      outro:   { c1: "#0a2818", c2: "#1ed760", c3: "#ffd166", accent: "#1ed760" },
+      tid:     { c1: "#2a1800", c2: "#ffb020", c3: "#ff6b00", accent: "#ffd166" },
+      projekt: { c1: "#001a2e", c2: "#00d4ff", c3: "#0066ff", accent: "#38bdf8" },
+      kod:     { c1: "#1a0028", c2: "#a855f7", c3: "#ec4899", accent: "#c084fc" },
+      ai:      { c1: "#200a00", c2: "#f97316", c3: "#facc15", accent: "#fb923c" },
+      team:    { c1: "#280010", c2: "#fb7185", c3: "#f472b6", accent: "#fb7185" },
+    };
+
+    const SOURCE_ICONS = {
+      trakka: "clock",
+      github: "github",
+      azure: "cloud",
+      cursor: "sparkles",
+      teams: "message-circle",
+      "github+azure": "git-branch",
+    };
+
+    const CARD_ICONS = {
+      time_hero: "clock-3",
+      customer_champion: "coins",
+      team_rhythm: "calendar-days",
+      project_juggler: "layers",
+      top_client: "building-2",
+      new_projects: "folder-plus",
+      code_flow: "git-commit-horizontal",
+      code_machine: "terminal",
+      ship_master: "rocket",
+      action_hub: "activity",
+      ci_champion: "workflow",
+      day_night: "sun-moon",
+      night_owl: "moon",
+      early_bird: "sunrise",
+      fast_reviewer: "zap",
+      thoughtful_reviewer: "eye",
+      pr_opener: "git-pull-request",
+      bug_hunter: "bug",
+      cursor_tabs: "sparkles",
+      cursor_bugbot: "shield-check",
+      cursor_pulse: "sparkles",
+      teams_reactions: "heart",
+      teams_victory: "trophy",
+      teams_chat_star: "message-circle",
+      teams_hot_channel: "megaphone",
+      teams_pulse: "messages-square",
+      teams_quote: "quote",
+    };
+
+    let data, slides = [], index = 0, animating = false;
+    let started = false;
+    let trackUris = [];
+    let spotifyController = null;
+    let musicMuted = false;
+    let musicPlaying = false;
+    let pendingTrackUri = null;
+
+    /* ── Particles ── */
+    (function initParticles() {
+      const c = document.getElementById("particleCanvas");
+      const ctx = c.getContext("2d");
+      let W, H, pts = [];
+      function resize() {
+        W = c.width = window.innerWidth;
+        H = c.height = window.innerHeight;
+      }
+      resize();
+      window.addEventListener("resize", resize);
+      for (let i = 0; i < 55; i++) {
+        pts.push({
+          x: Math.random() * W, y: Math.random() * H,
+          r: Math.random() * 2 + 0.5,
+          vx: (Math.random() - 0.5) * 0.4,
+          vy: (Math.random() - 0.5) * 0.4,
+          a: Math.random() * 0.35 + 0.08,
+        });
+      }
+      function frame() {
+        ctx.clearRect(0, 0, W, H);
+        for (const p of pts) {
+          p.x += p.vx; p.y += p.vy;
+          if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
+          if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(255,255,255,${p.a})`;
+          ctx.fill();
+        }
+        requestAnimationFrame(frame);
+      }
+      frame();
+    })();
+
+    const CARD_THEMES = {
+      new_projects: "projekt",
+      code_flow: "projekt",
+      code_machine: "projekt",
+      ship_master: "projekt",
+      action_hub: "projekt",
+      ci_champion: "projekt",
+      day_night: "projekt",
+      night_owl: "projekt",
+      early_bird: "projekt",
+      fast_reviewer: "projekt",
+      thoughtful_reviewer: "projekt",
+      pr_opener: "projekt",
+      bug_hunter: "projekt",
+    };
+
+    function themeKey(slide) {
+      if (slide.type === "intro") return "intro";
+      if (slide.type === "outro") return "outro";
+      const cardId = slide.card?.id;
+      if (cardId && CARD_THEMES[cardId]) return CARD_THEMES[cardId];
+      return slide.card?.section ?? "intro";
+    }
+
+    function buildSlides() {
+      slides = [
+        { type: "intro" },
+        ...data.cards.map((c) => ({ type: "card", card: c })),
+        { type: "outro" },
+      ];
+    }
+
+    async function init() {
+      const res = await fetch("./data/wrapped.json");
+      data = await res.json();
+      buildSlides();
+      document.getElementById("periodChip").textContent = data.period.label;
+      document.getElementById("sourcesPre").textContent = JSON.stringify(data.sources, null, 2);
+      document.getElementById("toggleSources").hidden = false;
+      document.getElementById("loader").classList.add("hide");
+      document.getElementById("app").classList.remove("fx-hidden");
+      renderProgress();
+      showSlide(0, 0);
+      trackUris = data.music?.tracks ?? [];
+      bindNav();
+      bindSources();
+      bindRestart();
+      bindMusic();
+      initSpotifyPlayer();
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function renderProgress() {
+      document.getElementById("progress").innerHTML = slides.map((_, i) => {
+        let cls = "";
+        if (i < index) cls = "done";
+        else if (i === index && (started || index > 0)) cls = "active";
+        else if (i === index) cls = "current";
+        return `<div class="seg ${cls}"><i></i></div>`;
+      }).join("");
+    }
+
+    function updateNavLock() {
+      const locked = index === 0 && !started;
+      document.getElementById("stage").classList.toggle("nav-locked", locked);
+      document.getElementById("navHint").classList.toggle("hidden", locked);
+      document.getElementById("restartBtn").classList.toggle("hidden", !started && index === 0);
+      document.getElementById("musicBtn").classList.toggle("hidden", locked || !trackUris.length);
+    }
+
+    function updateMusicBtn() {
+      const btn = document.getElementById("musicBtn");
+      const iconName = musicMuted ? "volume-x" : "volume-2";
+      btn.innerHTML = `<i data-lucide="${iconName}"></i>`;
+      btn.classList.toggle("muted", musicMuted);
+      btn.classList.toggle("playing", musicPlaying && !musicMuted);
+      btn.setAttribute("aria-label", musicMuted ? "Ljud på" : "Ljud av");
+      btn.title = musicMuted ? "Ljud på" : "Ljud av";
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function whenSpotifyReady(fn) {
+      if (window.__spotifyIFrameAPI) fn(window.__spotifyIFrameAPI);
+      else window.__spotifyReadyQueue.push(fn);
+    }
+
+    function initSpotifyPlayer() {
+      if (!trackUris.length) return;
+      whenSpotifyReady((IFrameAPI) => {
+        if (spotifyController) return;
+        IFrameAPI.createController(
+          document.getElementById("spotifyEmbedHost"),
+          {
+            uri: trackUris[0],
+            width: 280,
+            height: 80,
+          },
+          (controller) => {
+            spotifyController = controller;
+            controller.addListener("playback_started", () => {
+              musicPlaying = true;
+              updateMusicBtn();
+            });
+            controller.addListener("playback_update", (e) => {
+              musicPlaying = !e.data.isPaused;
+              updateMusicBtn();
+            });
+            if (pendingTrackUri) {
+              const uri = pendingTrackUri;
+              pendingTrackUri = null;
+              loadAndPlayTrack(uri);
+            }
+          }
+        );
+      });
+    }
+
+    function pickRandomTrackUri() {
+      return trackUris[Math.floor(Math.random() * trackUris.length)];
+    }
+
+    function loadAndPlayTrack(uri) {
+      if (!uri || !spotifyController) return;
+      spotifyController.loadUri(uri);
+      if (!musicMuted) {
+        window.setTimeout(() => {
+          try { spotifyController.play(); } catch (_) {}
+        }, 400);
+      }
+    }
+
+    function playRandomTrack() {
+      if (!trackUris.length) return;
+      musicMuted = false;
+      updateMusicBtn();
+      const uri = pickRandomTrackUri();
+      if (spotifyController) loadAndPlayTrack(uri);
+      else pendingTrackUri = uri;
+    }
+
+    function pauseMusic() {
+      if (!spotifyController) return;
+      try { spotifyController.pause(); } catch (_) {}
+      musicPlaying = false;
+      updateMusicBtn();
+    }
+
+    function toggleMusicMute() {
+      if (!spotifyController) return;
+      musicMuted = !musicMuted;
+      if (musicMuted) {
+        try { spotifyController.pause(); } catch (_) {}
+        musicPlaying = false;
+      } else {
+        try {
+          spotifyController.resume ? spotifyController.resume() : spotifyController.play();
+        } catch (_) {}
+      }
+      updateMusicBtn();
+    }
+
+    function bindMusic() {
+      document.getElementById("musicBtn").addEventListener("click", (e) => {
+        e.stopPropagation();
+        toggleMusicMute();
+      });
+    }
+
+    function restartStory() {
+      if (animating) return;
+      pauseMusic();
+      musicMuted = false;
+      started = false;
+      showSlide(0, index > 0 ? -1 : 0);
+    }
+
+    function startStory() {
+      if (started) return;
+      started = true;
+      updateNavLock();
+      playRandomTrack();
+      go(1);
+    }
+
+    function cardIconName(slide) {
+      if (slide.type === "outro") return "party-popper";
+      const id = slide.card?.id ?? "";
+      if (CARD_ICONS[id]) return CARD_ICONS[id];
+      if (id.startsWith("teams_")) return "message-circle";
+      if (slide.card?.source === "cursor") return "sparkles";
+      if (slide.card?.source === "trakka") return "clock-3";
+      return SOURCE_ICONS[slide.card?.source] ?? "sparkles";
+    }
+
+    function mountIconHero(el, slide) {
+      if (!el) return;
+      const icon = cardIconName(slide);
+      el.dataset.icon = icon;
+      el.innerHTML = `<i data-lucide="${icon}"></i>`;
+    }
+
+    function showSlide(i, dir) {
+      index = i;
+      renderProgress();
+      const slide = slides[i];
+      const tk = themeKey(slide);
+      const theme = THEMES[tk] ?? THEMES.intro;
+      const stage = document.getElementById("stage");
+      const old = stage.querySelector(".slide");
+      const isTransition = Boolean(old && dir !== 0);
+
+      if (isTransition) animating = true;
+
+      const mountAndEnter = () => {
+        const el = document.createElement("div");
+        el.className = `slide ${slide.type}${slide.card?.variant ? " " + slide.card.variant + "-layout" : ""}`;
+        el.style.setProperty("--c1", theme.c1);
+        el.style.setProperty("--c2", theme.c2);
+        el.style.setProperty("--c3", theme.c3);
+        el.style.setProperty("--accent", theme.accent);
+        el.innerHTML = `
+          <div class="slide-bg"></div>
+          <div class="slide-noise"></div>
+          <div class="slide-vignette"></div>
+          <div class="content-frame">
+            <div class="content-frame-inner">
+              ${renderSlideHtml(slide, theme)}
+            </div>
+          </div>
+        `;
+
+        stage.appendChild(el);
+
+        const inner = el.querySelector(".content-frame-inner");
+        const bg = el.querySelector(".slide-bg");
+
+        gsap.set(el, { opacity: 1 });
+        gsap.fromTo(bg, { opacity: 0, scale: 1.06 }, { opacity: 0.85, scale: 1, duration: 0.55, ease: "power2.out" });
+        gsap.fromTo(inner, {
+          y: dir >= 0 ? 48 : -48,
+          opacity: 0,
+          scale: 0.94,
+          filter: "blur(8px)",
+        }, {
+          y: 0,
+          opacity: 1,
+          scale: 1,
+          filter: "blur(0px)",
+          duration: 0.52,
+          ease: "back.out(1.12)",
+          onComplete: () => runSlideAnim(el, slide, theme, isTransition),
+        });
+
+        updateNavLock();
+      };
+
+      if (isTransition) {
+        const oldInner = old.querySelector(".content-frame-inner");
+        gsap.to(oldInner, {
+          y: dir >= 0 ? -40 : 40,
+          opacity: 0,
+          scale: 0.94,
+          filter: "blur(6px)",
+          duration: 0.26,
+          ease: "power2.in",
+        });
+        gsap.to(old, {
+          opacity: 0,
+          duration: 0.28,
+          ease: "power2.in",
+          onComplete: () => {
+            old.remove();
+            mountAndEnter();
+          },
+        });
+      } else {
+        if (old) old.remove();
+        mountAndEnter();
+      }
+    }
+
+    function runSlideAnim(el, slide, theme, lockNav = false) {
+      mountIconHero(el.querySelector("[data-icon-hero]"), slide);
+
+      const items = el.querySelectorAll(".fx-in");
+      gsap.fromTo(items, { y: 50, opacity: 0 }, {
+        y: 0, opacity: 1, duration: 0.55, stagger: 0.08, ease: "back.out(1.4)",
+      });
+
+      const stat = el.querySelector("[data-count]");
+      if (stat) {
+        const n = Number(stat.dataset.count);
+        if (!Number.isNaN(n)) {
+          const o = { v: 0 };
+          gsap.to(o, {
+            v: n, duration: 1.4, ease: "power2.out",
+            onUpdate: () => { stat.textContent = Math.round(o.v); },
+          });
+        }
+      }
+
+      el.querySelectorAll(".dash-bar span").forEach((bar, i) => {
+        gsap.to(bar, { width: bar.dataset.w + "%", duration: 0.9, delay: 0.3 + i * 0.07, ease: "power2.out" });
+      });
+
+      el.querySelectorAll(".reaction-bubble").forEach((bubble, i) => {
+        gsap.to(bubble, {
+          scale: 1,
+          duration: 0.42,
+          delay: 0.28 + i * 0.07,
+          ease: "back.out(2.2)",
+        });
+      });
+
+      const rxCount = el.querySelector(".reaction-count[data-count]");
+      if (rxCount) {
+        const n = Number(rxCount.dataset.count);
+        if (!Number.isNaN(n)) {
+          const o = { v: 0 };
+          gsap.to(o, {
+            v: n,
+            duration: 1.1,
+            delay: 0.45,
+            ease: "power2.out",
+            onUpdate: () => { rxCount.textContent = Math.round(o.v); },
+          });
+        }
+      }
+
+      el.querySelectorAll(".bento-item").forEach((item, i) => {
+        gsap.fromTo(item, { scale: 0.7, opacity: 0 }, {
+          scale: 1, opacity: 1, duration: 0.45, delay: 0.15 + i * 0.06, ease: "back.out(2)",
+        });
+      });
+
+      if (slide.type === "intro" || slide.type === "outro") burst(theme, slide.type === "outro" ? 2 : 1);
+      if (slide.type === "card" && ["time_hero","customer_champion","code_flow","cursor_pulse"].includes(slide.card.id)) {
+        setTimeout(() => burst(theme, 0.9), 500);
+      }
+
+      if (lockNav) setTimeout(() => { animating = false; }, 720);
+
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function burst(theme, m) {
+      if (typeof confetti !== "function") return;
+      confetti({
+        particleCount: Math.floor(80 * m),
+        spread: 100,
+        startVelocity: 45,
+        origin: { y: 0.55, x: 0.5 },
+        colors: [theme.accent, "#fff", theme.c2, theme.c3],
+      });
+    }
+
+    function initials(name) {
+      return String(name).split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+    }
+
+    function renderSlideHtml(slide, theme) {
+      if (slide.type === "intro") {
+        return `
+          <div class="slide-body">
+            <div class="intro-ring fx-in">
+              <div class="intro-ring-text">
+                <span class="intro-period">${esc(data.period.label)}</span>
+              </div>
+            </div>
+            <h1 class="intro-title fx-in">WEEKLY<br>WRAP</h1>
+            <p class="intro-sub fx-in">Third Act · ${data.meta?.cardCount ?? data.cards.length} highlights</p>
+            <button class="tap-cta fx-in" type="button" onclick="startStory()">Se vår vecka →</button>
+          </div>`;
+      }
+
+      if (slide.type === "outro") {
+        return `
+          <div class="slide-body">
+            <div class="outro-emoji fx-in">🎊</div>
+            <div class="icon-hero fx-in" data-icon-hero></div>
+            <h2 class="headline fx-in">Det var<br>vår vecka!</h2>
+            <p class="hero-stat-label fx-in">${data.meta.cardCount} highlights · ${data.meta.githubCommits} commits</p>
+            <p class="detail-text fx-in" style="text-align:center">Vi ses nästa vecka.</p>
+          </div>`;
+      }
+
+      const c = slide.card;
+      const icon = SOURCE_ICONS[c.source] ?? "zap";
+      const sourceLabel =
+        c.source === "github+azure" ? "GitHub+Azure · riktig data"
+        : c.source === "github" ? "GitHub · riktig data"
+        : `${c.source} · riktig data`;
+      const wm = String(c.stat).replace(/[^\d]/g, "") || c.emoji;
+
+      if (c.variant === "quote") {
+        const panel = c.quotePanel ?? {};
+        const rxEmojis = [...(panel.reactions ?? ["👍", "❤️", "😂", "🔥"])];
+        const fallbacks = ["👍", "❤️", "😂", "🔥"];
+        for (const e of fallbacks) {
+          if (rxEmojis.length >= 4) break;
+          if (!rxEmojis.includes(e)) rxEmojis.push(e);
+        }
+        const rxTotal = panel.reactionTotal ?? 8;
+        return `
+          <div class="watermark">"</div>
+          <div class="slide-body quote-layout">
+            <div class="icon-hero quote-icon fx-in" data-icon-hero></div>
+            <div class="icon-badge fx-in"><i data-lucide="${icon}"></i> Teams · riktig data</div>
+            <p class="eyebrow fx-in">${esc(c.subtitle)}</p>
+            <h2 class="headline fx-in" style="font-size:clamp(2rem,8vw,3rem)">${esc(c.title)}</h2>
+            <p class="quote-text fx-in">${quoteForDisplay(c.winner)}</p>
+            <div class="quote-reactions fx-in">
+              <div class="reaction-bubbles">
+                ${rxEmojis.slice(0, 4).map((e, i) =>
+                  `<span class="reaction-bubble" style="--i:${i}">${e}</span>`
+                ).join("")}
+              </div>
+              <div class="reaction-total">
+                <span class="reaction-count" data-count="${rxTotal}">0</span>
+                <span class="reaction-label">reaktioner</span>
+              </div>
+            </div>
+            <div class="quote-author fx-in">
+              <span class="quote-avatar">${initials(c.stat)}</span>
+              ${esc(c.stat)} <span style="opacity:0.5;font-weight:500">· ${esc(c.statLabel)}</span>
+            </div>
+            <p class="detail-text fx-in">${esc(c.detail)}</p>
+          </div>`;
+      }
+
+      if (c.variant === "cursor") {
+        const p = c.cursorPanel ?? {};
+        const champ = p.champion;
+        const model = p.topModel;
+        return `
+          <div class="watermark">${esc(String(c.stat))}</div>
+          <div class="slide-body">
+            <div class="icon-hero fx-in" data-icon-hero></div>
+            <div class="icon-badge fx-in"><i data-lucide="sparkles"></i> Cursor · hela teamet</div>
+            <p class="eyebrow fx-in">${esc(c.subtitle)}</p>
+            <h2 class="headline fx-in">${esc(c.title)}</h2>
+            <div class="hero-stat fx-in" data-count="${parseFloat(String(c.stat).replace(/\s/g, "")) || 0}">0</div>
+            <p class="hero-stat-label fx-in">${esc(c.statLabel)}</p>
+            <div class="winner-pill fx-in">${champ ? `<span class="crown">👑</span> ${esc(champ.name)}` : esc(c.winner)}</div>
+            ${model ? `<p class="cursor-model-line fx-in">Favoritmodell: <strong>${esc(model.name)}</strong></p>` : ""}
+          </div>`;
+      }
+
+      /* Default spotlight card */
+      const statNum = /^\d+(\.\d+)?$/.test(String(c.stat).trim());
+      return `
+        <div class="watermark">${esc(wm)}</div>
+        <div class="slide-body">
+          <div class="icon-hero fx-in" data-icon-hero></div>
+          <div class="icon-badge fx-in"><i data-lucide="${icon}"></i> ${esc(sourceLabel)}</div>
+          <p class="eyebrow fx-in">${esc(c.subtitle)}</p>
+          <h2 class="headline fx-in">${esc(c.title)}</h2>
+          ${statNum
+            ? `<div class="hero-stat fx-in" data-count="${c.stat}">0</div>`
+            : `<div class="hero-stat fx-in" style="font-size:clamp(2.5rem,12vw,4rem)">${esc(c.stat)}</div>`}
+          <p class="hero-stat-label fx-in">${esc(c.statLabel)}</p>
+          <div class="winner-pill fx-in"><span class="crown">👑</span> ${esc(c.winner)}</div>
+          <p class="detail-text fx-in">${esc(c.detail)}</p>
+        </div>`;
+    }
+
+    function esc(s) {
+      return String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+    }
+
+    function quoteForDisplay(raw) {
+      return esc(
+        String(raw ?? "")
+          .replace(/^"|"$/g, "")
+          .replace(/https?:\/\/[^\s<>"')\]]+/gi, "")
+          .replace(/\s+/g, " ")
+          .trim()
+      );
+    }
+
+    function go(dir) {
+      if (!started && index === 0 && dir > 0) return;
+      if (animating) return;
+      const next = index + dir;
+      if (next < 0 || next >= slides.length) return;
+      showSlide(next, dir);
+    }
+
+    function bindNav() {
+      document.getElementById("stage").addEventListener("click", (e) => {
+        if (e.target.closest(".tap-cta")) return;
+        if (index === 0 && !started) return;
+        const r = e.currentTarget.getBoundingClientRect();
+        go(e.clientX - r.left < r.width / 2 ? -1 : 1);
+      });
+      document.addEventListener("keydown", (e) => {
+        if (index === 0 && !started) return;
+        if (e.key === "ArrowRight" || e.key === " ") { e.preventDefault(); go(1); }
+        if (e.key === "ArrowLeft") go(-1);
+      });
+    }
+
+    function bindRestart() {
+      document.getElementById("restartBtn").addEventListener("click", (e) => {
+        e.stopPropagation();
+        restartStory();
+      });
+    }
+
+    function bindSources() {
+      const backdrop = document.getElementById("sourcesBackdrop");
+      const open = () => {
+        backdrop.classList.add("open");
+        backdrop.setAttribute("aria-hidden", "false");
+      };
+      const close = () => {
+        backdrop.classList.remove("open");
+        backdrop.setAttribute("aria-hidden", "true");
+      };
+      document.getElementById("toggleSources").addEventListener("click", (e) => {
+        e.stopPropagation();
+        open();
+      });
+      document.getElementById("closeSources").addEventListener("click", close);
+      backdrop.addEventListener("click", (e) => {
+        if (e.target === backdrop) close();
+      });
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && backdrop.classList.contains("open")) close();
+      });
+    }
+
+    window.startStory = startStory;
+    init().catch((e) => {
+      document.getElementById("loader").innerHTML = `<p style="padding:24px">Fel: ${esc(e.message)}</p>`;
+    });
+  </script>
+</body>
+</html>

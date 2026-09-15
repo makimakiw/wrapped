@@ -1,0 +1,417 @@
+{
+  "generatedAt": "2026-09-15T12:58:04.097Z",
+  "period": {
+    "from": "2026-09-08",
+    "to": "2026-09-14",
+    "label": "8–14 september 2026"
+  },
+  "org": "third-act",
+  "sources": {
+    "github": {
+      "status": "ok",
+      "real": true,
+      "commits": 364,
+      "mergedPrs": 63,
+      "closedIssues": 1
+    },
+    "trakka": {
+      "status": "ok",
+      "real": true,
+      "entries": 78
+    },
+    "azure": {
+      "status": "ok",
+      "real": true,
+      "authMethod": "keychain",
+      "mergedPrs": 13
+    },
+    "projects": {
+      "status": "ok",
+      "total": 1,
+      "github": 1,
+      "azure": 0
+    },
+    "teams": {
+      "status": "ok",
+      "real": true,
+      "messages": 193,
+      "channelMessages": 10,
+      "chatMessages": 183,
+      "groupChatsScanned": 208,
+      "hasQuote": true,
+      "highlights": 1
+    },
+    "cursor": {
+      "status": "ok",
+      "real": true,
+      "mode": "team",
+      "scope": "hela teamet",
+      "activeUsers": 9,
+      "aiRequests": 765,
+      "compare": {
+        "aiRequests": -94,
+        "lines": -54,
+        "tabs": 90,
+        "activeUsers": -10,
+        "previousAiRequests": 13331,
+        "previousLines": 128816
+      },
+      "previousPeriod": {
+        "from": "2026-09-01",
+        "to": "2026-09-07"
+      },
+      "topModels": [
+        {
+          "name": "composer-2.5-fast",
+          "requests": 398,
+          "share": 52
+        },
+        {
+          "name": "composer-2.5",
+          "requests": 228,
+          "share": 30
+        },
+        {
+          "name": "cursor-grok-4.6-low",
+          "requests": 54,
+          "share": 7
+        }
+      ],
+      "reason": null,
+      "teamHint": null
+    }
+  },
+  "cards": [
+    {
+      "id": "time_hero",
+      "emoji": "⏱️",
+      "title": "Timhjälten",
+      "subtitle": "Mest loggad tid",
+      "winner": "Jonas Lissborg",
+      "stat": "42",
+      "statLabel": "timmar",
+      "detail": "Största projekt: Prep och testning inför sth installation (40h)",
+      "source": "trakka",
+      "real": true,
+      "section": "tid"
+    },
+    {
+      "id": "customer_champion",
+      "emoji": "💰",
+      "title": "Mest cash",
+      "subtitle": "Dragit in mest den veckan",
+      "winner": "Jonas Lissborg",
+      "stat": "41",
+      "statLabel": "kundtimmar",
+      "detail": "Speedbox (57h) · teamet totalt 118 kundtimmar",
+      "source": "trakka",
+      "real": true,
+      "section": "tid"
+    },
+    {
+      "id": "team_rhythm",
+      "emoji": "🤝",
+      "title": "On a streak",
+      "subtitle": "Loggade varje vardag",
+      "winner": "Alexander Hansen",
+      "stat": "5",
+      "statLabel": "av 5 vardagar",
+      "detail": "Alexander Hansen · 5/5 vardagar i rad",
+      "source": "trakka",
+      "real": true,
+      "section": "tid"
+    },
+    {
+      "id": "ship_master",
+      "emoji": "🚀",
+      "title": "Ship Master",
+      "subtitle": "Mest shipping · GitHub & Azure",
+      "winner": "Alexander Schultz",
+      "stat": "65",
+      "statLabel": "PR:ar",
+      "detail": "32 merges · 33 öppnade · 76 totalt",
+      "source": "github+azure",
+      "real": true,
+      "section": "kod"
+    },
+    {
+      "id": "code_flow",
+      "emoji": "🔥",
+      "title": "Kodflödet",
+      "subtitle": "Mest aktiv · GitHub & Azure",
+      "winner": "Pål Arvei",
+      "stat": "173",
+      "statLabel": "commits + merges",
+      "detail": "167 commits · 6 Azure-merges · third-act",
+      "source": "github+azure",
+      "real": true,
+      "section": "kod"
+    },
+    {
+      "id": "new_projects",
+      "emoji": "🌱",
+      "title": "Nya projekt",
+      "subtitle": "Repos som föddes den veckan",
+      "winner": "Pål Arvei",
+      "stat": "1",
+      "statLabel": "repos",
+      "detail": "Pål Arvei startade 1 · GitHub & Azure",
+      "source": "github+azure",
+      "real": true,
+      "section": "kod"
+    },
+    {
+      "id": "pr_opener",
+      "emoji": "📝",
+      "title": "PR-fabriken",
+      "subtitle": "Flest öppnade PR:ar",
+      "winner": "Alexander Schultz",
+      "stat": "33",
+      "statLabel": "PR:ar",
+      "detail": "Shipping mindset · GitHub & Azure",
+      "source": "github+azure",
+      "real": true,
+      "section": "kod"
+    },
+    {
+      "id": "action_hub",
+      "emoji": "📦",
+      "title": "Action Hub",
+      "subtitle": "Hetast repo · GitHub & Azure",
+      "winner": "Pål Arvei",
+      "stat": "133",
+      "statLabel": "commits",
+      "detail": "reise · 82 CI-körningar · GitHub Actions",
+      "source": "github+azure",
+      "real": true,
+      "section": "kod"
+    },
+    {
+      "id": "cursor_pulse",
+      "emoji": "✨",
+      "title": "Cursor-veckan",
+      "subtitle": "9 personer · hela teamet",
+      "winner": "Max Wroblewski",
+      "stat": "765",
+      "statLabel": "AI-requests",
+      "detail": "",
+      "source": "cursor",
+      "real": true,
+      "variant": "cursor",
+      "cursorPanel": {
+        "champion": {
+          "name": "Max Wroblewski"
+        },
+        "topModel": {
+          "name": "composer 2.5 fast"
+        }
+      },
+      "section": "ai"
+    },
+    {
+      "id": "teams_reactions",
+      "emoji": "🔥",
+      "title": "Flest reaktioner",
+      "subtitle": "LÉ FAMILY",
+      "winner": "\"Schema och packlista för den årliga konferensen! Alla Fredag 12.00 - Samling och lunch 14.00 - Gemensam supply run…\"",
+      "stat": "Alexander Schultz",
+      "statLabel": "sa det",
+      "detail": "Ur LÉ FAMILY",
+      "source": "teams",
+      "real": true,
+      "variant": "quote",
+      "quotePanel": {
+        "reactions": [
+          "👍",
+          "🔥",
+          "😂",
+          "❤️"
+        ],
+        "reactionTotal": 9
+      },
+      "section": "team"
+    },
+    {
+      "id": "teams_chat_star",
+      "emoji": "🗣️",
+      "title": "Mest aktiv i chattarna",
+      "subtitle": "Speedbox intern kanal",
+      "winner": "Jonas Lissborg",
+      "stat": "39",
+      "statLabel": "meddelanden",
+      "detail": "39 meddelanden · Speedbox intern kanal",
+      "source": "teams",
+      "real": true,
+      "section": "team"
+    },
+    {
+      "id": "teams_victory",
+      "emoji": "🏆",
+      "title": "Victory moment",
+      "subtitle": "Speedbox intern kanal",
+      "winner": "\"Alright! Ship it!\"",
+      "stat": "Jonas Lissborg",
+      "statLabel": "sa det",
+      "detail": "Ur Speedbox intern kanal",
+      "source": "teams",
+      "real": true,
+      "variant": "quote",
+      "quotePanel": {
+        "reactions": [
+          "👍",
+          "🏆",
+          "🔥",
+          "👏"
+        ],
+        "reactionTotal": 4
+      },
+      "section": "team"
+    }
+  ],
+  "sections": [
+    {
+      "id": "tid",
+      "title": "Tid & kund",
+      "subtitle": "Trakka · tider & loggar",
+      "emoji": "⏱️",
+      "cardCount": 3
+    },
+    {
+      "id": "kod",
+      "title": "Kod & shipping",
+      "subtitle": "GitHub & Azure · sammanslaget",
+      "emoji": "💻",
+      "cardCount": 5
+    },
+    {
+      "id": "ai",
+      "title": "AI & Cursor",
+      "subtitle": "Teamets Cursor-vecka",
+      "emoji": "✨",
+      "cardCount": 1
+    },
+    {
+      "id": "team",
+      "title": "Teams & kultur",
+      "subtitle": "Citat och skitsnack",
+      "emoji": "💬",
+      "cardCount": 3
+    }
+  ],
+  "meta": {
+    "githubCommits": 364,
+    "githubMergedPrs": 63,
+    "trakkaEntries": 78,
+    "azureMergedPrs": 13,
+    "teamsMessages": 193,
+    "cardCount": 12,
+    "sectionCount": 4
+  },
+  "music": {
+    "playlistId": "1rBL2DEwVfa12UHVU1YvF4",
+    "playlistUrl": "https://open.spotify.com/playlist/1rBL2DEwVfa12UHVU1YvF4?si=f47a1145f4004d92",
+    "title": "A BIT OF THIS –  A BIT OF THAT",
+    "tracks": [
+      "spotify:track:3zSBsvj6MWavRKfPE51395",
+      "spotify:track:7feFMZxaNV6km5QZAXYyv0",
+      "spotify:track:3T6hC2yWf0fsUxM7uWXkDn",
+      "spotify:track:6XtiBZ34C9R5qvG9VBJBOJ",
+      "spotify:track:4yQQuyjdUzVQozJrlJRnBM",
+      "spotify:track:4GbuBcDr0lE0tyDQ5TzAhW",
+      "spotify:track:0bYYiVfOeqjiN4nN6T6on8",
+      "spotify:track:5I6jxFTcbN8sHT3MPUeTAH",
+      "spotify:track:72mWF2uVrDaFtp33r0IyGS",
+      "spotify:track:4APbq8nbqh51BljeGNea0l",
+      "spotify:track:48ieq4orqgVGclzC5dEMy3",
+      "spotify:track:4G5lTzfkklIotjt28dhlz3",
+      "spotify:track:0VEmCJYTCFmfbyTd8jGT8h",
+      "spotify:track:4AaprdeMMgEgo2iIOQAztk",
+      "spotify:track:75S7MNRjJJA8Dpkg4VpB22",
+      "spotify:track:72CLlhWZryvQoDSgS5UsIj",
+      "spotify:track:7ih20ZGXEAVCIhGakeWc2a",
+      "spotify:track:33PiUf1ZujNZniWrF2no9v",
+      "spotify:track:5bIsU74QBPwMZk28GYtWAX",
+      "spotify:track:4Ype79yfSqUW1INIHjKzHR",
+      "spotify:track:0Uti7GqCvrhmnpP9vg8Gds",
+      "spotify:track:3Rtc0EpLcQbFyuXpqU6vgE",
+      "spotify:track:0hY1m4uFfjhHKeVOJPeJdO",
+      "spotify:track:0EF3gHprK65KddPflKqHD4",
+      "spotify:track:5Xs3R5NgryHr2oukyEGc19",
+      "spotify:track:1sXTMdIG5Z0N2VT8Szm7Ce",
+      "spotify:track:1ddZqlrZuRnfwPk0bw5iRg",
+      "spotify:track:4EgOshzvbK85iuKmA77bWi",
+      "spotify:track:34q0PXXMNvX0WJhEjSBA9m",
+      "spotify:track:7174iU2JcN7ksjKbNSssFq",
+      "spotify:track:3X4dCNeVxPCqiRfyB5hJeH",
+      "spotify:track:54CAFG2CFdR0HiBybM6sGJ",
+      "spotify:track:08VQhf7exw4oOLHppR6cqu",
+      "spotify:track:2ld25BsGNbPz9Ijymmi9GS",
+      "spotify:track:4orPBWfQNUxs3RObirJwZR",
+      "spotify:track:5PViMIycchsH89P10fQQ1l",
+      "spotify:track:0gvjAN38iqelotsCp9glVD",
+      "spotify:track:5ihH2ONl02qEAldBw0zjfY",
+      "spotify:track:591MXw9zjDwWIg3QavRPpR",
+      "spotify:track:6rja0E3y01ufTRlmUJU5rb",
+      "spotify:track:0SStnkh9FfaQKiZf7dAbTV",
+      "spotify:track:5i7ftdWG8Uui4dEgTBSTBq",
+      "spotify:track:3L5hMqoPcwFHgFItSMLxDA",
+      "spotify:track:4tXxKL0sitqkLiPJLUmubz",
+      "spotify:track:5Syy8uO93MDihbpKejN411",
+      "spotify:track:1elfTQEibaOGHkLY1GAIO9",
+      "spotify:track:3OaCGuWEXcT1ygvV1IwQ0H",
+      "spotify:track:3sYOwddm8Ig3D3rTElyhoj",
+      "spotify:track:0GY4BHyjprrXckv7hHXvpN",
+      "spotify:track:6m7drzAnq4aPmKE8MJfVRA",
+      "spotify:track:5sYjcep1nfIIhdaqAdz4Z4",
+      "spotify:track:2jzHx0qSUEWvXKw7Xg2PDk",
+      "spotify:track:4kEHlpphRpLlRa3wMH3Yy4",
+      "spotify:track:6HJH2v5BIqpKW34nsLV1O7",
+      "spotify:track:2ZIaH69kaz55RM4Pjx6KXl",
+      "spotify:track:6pxFF2Ky22UVE5xQOloyqa",
+      "spotify:track:3NVkeHLGwNU9QYEMHx573O",
+      "spotify:track:2NDC75eLTl1bYgVW2gc1pn",
+      "spotify:track:21Phj46KeUHOWyZW9A9b7P",
+      "spotify:track:341C1nUuYGwlQOI8N5QLpB",
+      "spotify:track:07fzGBSPiCnv9P3gSp8aDc",
+      "spotify:track:3jAg0zZ3djLfPJZUg8tqWB",
+      "spotify:track:0tH7mxb2ML1VlOinHRcelQ",
+      "spotify:track:6pMtdOSLOtTtd7fmtqeqGg",
+      "spotify:track:1gvm7pTwQpv6UdnvlTssp0",
+      "spotify:track:4q650OiSDQIwccxDFpuuBm",
+      "spotify:track:0pK2JBZWcEsGEAwRegdXRT",
+      "spotify:track:6v9LtAfVGZSzy1LNFvW8X2",
+      "spotify:track:70U0cjG4TO5zA9mrzPQ6u7",
+      "spotify:track:4fSTLYHl8xdUNfsrC7f1RX",
+      "spotify:track:46Ezt0lIxCmEyO3F8yrc5V",
+      "spotify:track:2Dk5PNGZiT83jnXKQBLqTa",
+      "spotify:track:1Rezzt36ybaT2ZbDZpv83D",
+      "spotify:track:5R6ctqjUGj9j6z7PvXYcQy",
+      "spotify:track:6ZCsCSxRfZOXWdOqG4c5YN",
+      "spotify:track:6iGRtLwZKU2EFv3u6uOvtk",
+      "spotify:track:7ve54JSHBvuDEqDD5zixOl",
+      "spotify:track:7sz8H5jWRxSV7FtyBHShgx",
+      "spotify:track:4wSMi5urWxpBPbnWqfI1Ht",
+      "spotify:track:2eyPtyuJl4UPzwd67wdyK8",
+      "spotify:track:2ZnWEF2N3vs2DvS4WWBoPp",
+      "spotify:track:3JZjPBwqL5F4PE55nm8iNV",
+      "spotify:track:34bE3CbYe4IkBRIxn52kNJ",
+      "spotify:track:0uPBJolEn505OX2G3BV9Hf",
+      "spotify:track:4NsBEdmbgu9u8cH21ycyBv",
+      "spotify:track:6nS5Vfs6Kv75ZFUa2MKvaz",
+      "spotify:track:2lED6rDIOZSo8ERs9dkJSd",
+      "spotify:track:2sLGqwPISURak8z2ndFdn5",
+      "spotify:track:7bfMKlkk76s6ou41vmRS9W",
+      "spotify:track:38jGpNFpQHMEKggSryLHY0",
+      "spotify:track:64KDTInKVX3iVKIkQkof28",
+      "spotify:track:6QVhz3ns7tSbgkBHBDRFuZ",
+      "spotify:track:2O6X9nPVVQSefg3xOQAo5u",
+      "spotify:track:69Rtxcegz1aXtPRAY31tw8",
+      "spotify:track:49YxS2Ap2eSbtdT0xacCE6",
+      "spotify:track:6MJolAmoTcNjI5Y4D8WSTh",
+      "spotify:track:0dNffOIQTFFfv6xLzBn42x",
+      "spotify:track:7hWutXP8By2N83s6i0qAaj",
+      "spotify:track:18eM8b0M1WsLcmPqZ4ElGg",
+      "spotify:track:6BxeLxoipQZGxe9jBsblQH"
+    ]
+  }
+}
