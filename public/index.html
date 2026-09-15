@@ -93,6 +93,8 @@
     }
 
     .restart-btn {
+      position: relative;
+      z-index: 50;
       flex-shrink: 0;
       width: 32px;
       height: 32px;
@@ -1024,6 +1026,8 @@
       cursor_tabs: "sparkles",
       cursor_bugbot: "shield-check",
       cursor_pulse: "sparkles",
+      cursor_lines: "file-code-2",
+      cursor_model: "brain",
       teams_reactions: "heart",
       teams_victory: "trophy",
       teams_chat_star: "message-circle",
@@ -1323,15 +1327,26 @@
       });
     }
 
+    function forceSlideReset() {
+      animating = false;
+      const stage = document.getElementById("stage");
+      if (!stage) return;
+      gsap.killTweensOf(stage.querySelectorAll(".slide, .slide *"));
+      stage.querySelectorAll(".slide").forEach((el) => el.remove());
+    }
+
     function restartStory() {
-      if (animating) return;
+      forceSlideReset();
       musicMuted = true;
       pauseMusic();
       destroySpotifyPlayer();
       currentTrackUri = null;
       updateMusicBtn();
       started = false;
-      showSlide(0, index > 0 ? -1 : 0);
+      index = 0;
+      renderProgress();
+      showSlide(0, 0);
+      updateNavLock();
     }
 
     function startStory() {
@@ -1498,7 +1513,11 @@
         setTimeout(() => burst(theme, 0.85), 480);
       }
 
-      if (lockNav) setTimeout(() => { animating = false; }, 720);
+      if (lockNav) {
+        setTimeout(() => { animating = false; }, 720);
+      } else {
+        animating = false;
+      }
 
       if (window.lucide) lucide.createIcons();
     }
@@ -1662,6 +1681,7 @@
 
     function bindRestart() {
       document.getElementById("restartBtn").addEventListener("click", (e) => {
+        e.preventDefault();
         e.stopPropagation();
         restartStory();
       });

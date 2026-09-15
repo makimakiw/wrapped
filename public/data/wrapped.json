@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-15T12:58:04.097Z",
+  "generatedAt": "2026-09-15T13:27:46.973Z",
   "period": {
     "from": "2026-09-08",
     "to": "2026-09-14",
@@ -79,6 +79,12 @@
       ],
       "reason": null,
       "teamHint": null
+    },
+    "spotify": {
+      "status": "ok",
+      "playlistId": "1rBL2DEwVfa12UHVU1YvF4",
+      "trackCount": 100,
+      "title": "A BIT OF THIS –  A BIT OF THAT"
     }
   },
   "cards": [
@@ -148,19 +154,6 @@
       "section": "kod"
     },
     {
-      "id": "new_projects",
-      "emoji": "🌱",
-      "title": "Nya projekt",
-      "subtitle": "Repos som föddes den veckan",
-      "winner": "Pål Arvei",
-      "stat": "1",
-      "statLabel": "repos",
-      "detail": "Pål Arvei startade 1 · GitHub & Azure",
-      "source": "github+azure",
-      "real": true,
-      "section": "kod"
-    },
-    {
       "id": "pr_opener",
       "emoji": "📝",
       "title": "PR-fabriken",
@@ -169,19 +162,6 @@
       "stat": "33",
       "statLabel": "PR:ar",
       "detail": "Shipping mindset · GitHub & Azure",
-      "source": "github+azure",
-      "real": true,
-      "section": "kod"
-    },
-    {
-      "id": "action_hub",
-      "emoji": "📦",
-      "title": "Action Hub",
-      "subtitle": "Hetast repo · GitHub & Azure",
-      "winner": "Pål Arvei",
-      "stat": "133",
-      "statLabel": "commits",
-      "detail": "reise · 82 CI-körningar · GitHub Actions",
       "source": "github+azure",
       "real": true,
       "section": "kod"
@@ -206,6 +186,19 @@
           "name": "composer 2.5 fast"
         }
       },
+      "section": "ai"
+    },
+    {
+      "id": "cursor_lines",
+      "emoji": "✍️",
+      "title": "AI-raderna",
+      "subtitle": "Mest accepterad AI-kod",
+      "winner": "Alexander Hansen",
+      "stat": "34 899",
+      "statLabel": "rader",
+      "detail": "Rader teamet accepterat från Cursor",
+      "source": "cursor",
+      "real": true,
       "section": "ai"
     },
     {
@@ -266,6 +259,19 @@
         "reactionTotal": 4
       },
       "section": "team"
+    },
+    {
+      "id": "teams_hot_channel",
+      "emoji": "📢",
+      "title": "Hetaste kanalen",
+      "subtitle": "Mest aktiv i Teams",
+      "winner": "Jonas Lissborg",
+      "stat": "86",
+      "statLabel": "meddelanden",
+      "detail": "Speedbox intern kanal · 86 meddelanden",
+      "source": "teams",
+      "real": true,
+      "section": "team"
     }
   ],
   "sections": [
@@ -281,32 +287,23 @@
       "title": "Kod & shipping",
       "subtitle": "GitHub & Azure · sammanslaget",
       "emoji": "💻",
-      "cardCount": 5
+      "cardCount": 3
     },
     {
       "id": "ai",
       "title": "AI & Cursor",
       "subtitle": "Teamets Cursor-vecka",
       "emoji": "✨",
-      "cardCount": 1
+      "cardCount": 2
     },
     {
       "id": "team",
       "title": "Teams & kultur",
       "subtitle": "Citat och skitsnack",
       "emoji": "💬",
-      "cardCount": 3
+      "cardCount": 4
     }
   ],
-  "meta": {
-    "githubCommits": 364,
-    "githubMergedPrs": 63,
-    "trakkaEntries": 78,
-    "azureMergedPrs": 13,
-    "teamsMessages": 193,
-    "cardCount": 12,
-    "sectionCount": 4
-  },
   "music": {
     "playlistId": "1rBL2DEwVfa12UHVU1YvF4",
     "playlistUrl": "https://open.spotify.com/playlist/1rBL2DEwVfa12UHVU1YvF4?si=f47a1145f4004d92",
@@ -413,5 +410,14 @@
       "spotify:track:18eM8b0M1WsLcmPqZ4ElGg",
       "spotify:track:6BxeLxoipQZGxe9jBsblQH"
     ]
+  },
+  "meta": {
+    "githubCommits": 364,
+    "githubMergedPrs": 63,
+    "trakkaEntries": 78,
+    "azureMergedPrs": 13,
+    "teamsMessages": 193,
+    "cardCount": 12,
+    "sectionCount": 4
   }
 }

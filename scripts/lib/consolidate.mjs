@@ -3,7 +3,7 @@ import { fmtHours, makeCard, makeSection } from "./utils.mjs";
 
 const TARGET_CARDS = 12;
 const SECTION_ORDER = ["tid", "kod", "ai", "team"];
-const SECTION_TARGET = { tid: 3, kod: 5, ai: 1, team: 3 };
+const SECTION_TARGET = { tid: 3, kod: 3, ai: 2, team: 4 };
 
 function top(map) {
   if (!map?.size) return null;
@@ -440,7 +440,6 @@ function buildPool({ gh, az, trk, teams, cursor, projects, fmtName, org }) {
     const named = repos.filter((r) => r.author).slice(0, 2).map((r) => r.name);
     push({
       section: "kod",
-      anchor: true,
       score: 84 + projectTotal * 10,
       card: makeCard({
         id: "new_projects",
@@ -759,6 +758,28 @@ function buildPool({ gh, az, trk, teams, cursor, projects, fmtName, org }) {
       }),
     });
 
+    const linesLeader = [...(cStats.users?.values() ?? [])]
+      .filter((u) => u.acceptedLinesAdded > 0)
+      .sort((a, b) => b.acceptedLinesAdded - a.acceptedLinesAdded)[0];
+    if (linesLeader && linesLeader.acceptedLinesAdded >= 200) {
+      push({
+        section: "ai",
+        score: 78 + linesLeader.acceptedLinesAdded * 0.003,
+        card: makeCard({
+          id: "cursor_lines",
+          emoji: "✍️",
+          title: "AI-raderna",
+          subtitle: "Mest accepterad AI-kod",
+          winner: linesLeader.name,
+          stat: linesLeader.acceptedLinesAdded.toLocaleString("sv-SE"),
+          statLabel: "rader",
+          detail: "Rader teamet accepterat från Cursor",
+          source: "cursor",
+          section: "ai",
+        }),
+      });
+    }
+
     const tabLeader = [...(cStats.users?.values() ?? [])]
       .filter((u) => u.totalTabsAccepted > 0)
       .sort((a, b) => b.totalTabsAccepted - a.totalTabsAccepted)[0];
@@ -775,6 +796,26 @@ function buildPool({ gh, az, trk, teams, cursor, projects, fmtName, org }) {
           stat: tabLeader.totalTabsAccepted,
           statLabel: "tabs",
           detail: "Tab tab tab · Cursor",
+          source: "cursor",
+          section: "ai",
+        }),
+      });
+    }
+
+    if (topModel && cStats.topModels?.[0]?.requests > 0) {
+      const model = cStats.topModels[0];
+      push({
+        section: "ai",
+        score: 72 + model.requests * 0.04,
+        card: makeCard({
+          id: "cursor_model",
+          emoji: "🧠",
+          title: "Favoritmodellen",
+          subtitle: "Teamets mest valda AI",
+          winner: shortModel(model.name),
+          stat: model.share,
+          statLabel: "% av requests",
+          detail: `${model.requests.toLocaleString("sv-SE")} requests · hela teamet`,
           source: "cursor",
           section: "ai",
         }),
