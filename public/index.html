@@ -785,11 +785,12 @@
 
     .spotify-player-host {
       position: fixed;
-      width: 0;
-      height: 0;
+      left: -9999px;
+      top: 0;
+      width: 320px;
+      height: 88px;
       overflow: hidden;
       opacity: 0;
-      visibility: hidden;
       pointer-events: none;
     }
 
@@ -1044,6 +1045,7 @@
     let musicPlaying = false;
     let currentTrackUri = null;
     let spotifyBooting = false;
+    let pendingMusicReady = null;
     let advancingTrack = false;
     let trackEndTimer = null;
     let lastAdvanceAt = 0;
@@ -1194,10 +1196,18 @@
         onReady?.();
         return;
       }
-      if (spotifyBooting) return;
+      if (spotifyBooting) {
+        pendingMusicReady = onReady;
+        return;
+      }
       spotifyBooting = true;
+      const bootTimeout = window.setTimeout(() => {
+        if (!spotifyController) spotifyBooting = false;
+      }, 12000);
+
       whenSpotifyReady((IFrameAPI) => {
         if (spotifyController) {
+          window.clearTimeout(bootTimeout);
           spotifyBooting = false;
           onReady?.();
           return;
@@ -1206,12 +1216,18 @@
         currentTrackUri = uri;
         IFrameAPI.createController(
           document.getElementById("spotifyEmbedHost"),
-          { uri, width: 1, height: 1 },
+          { uri, width: 320, height: 88 },
           (controller) => {
+            window.clearTimeout(bootTimeout);
             spotifyController = controller;
             spotifyBooting = false;
             attachSpotifyListeners(controller);
             onReady?.();
+            if (pendingMusicReady) {
+              const cb = pendingMusicReady;
+              pendingMusicReady = null;
+              cb();
+            }
           }
         );
       });
@@ -1286,16 +1302,25 @@
       });
     }
 
+    function tryPlay() {
+      if (!spotifyController || musicMuted) return;
+      try {
+        if (spotifyController.resume) spotifyController.resume();
+        else spotifyController.play();
+      } catch (_) {
+        try { spotifyController.play(); } catch (_) {}
+      }
+    }
+
     function loadAndPlayTrack(uri, opts = {}) {
       if (!uri || !spotifyController) return;
       currentTrackUri = uri;
       lastPlayback = { position: 0, duration: 0, isPaused: true };
       spotifyController.loadUri(uri);
       if (!musicMuted) {
-        window.setTimeout(() => {
-          try { spotifyController.play(); } catch (_) {}
-          if (!opts.skipFade) scheduleTrackEndTimer(0, 30500, false);
-        }, 400);
+        window.setTimeout(tryPlay, 500);
+        window.setTimeout(tryPlay, 1200);
+        if (!opts.skipFade) scheduleTrackEndTimer(0, 30500, false);
       }
     }
 
@@ -1310,12 +1335,19 @@
       if (!trackUris.length) return;
       if (musicMuted) {
         musicMuted = false;
-        currentTrackUri = pickRandomTrackUri();
-        ensureSpotifyPlayer(() => loadAndPlayTrack(currentTrackUri));
+        updateMusicBtn();
+        if (!currentTrackUri) currentTrackUri = pickRandomTrackUri();
+        ensureSpotifyPlayer(() => {
+          if (spotifyController && currentTrackUri) {
+            loadAndPlayTrack(currentTrackUri);
+          } else {
+            tryPlay();
+          }
+        });
       } else {
         musicMuted = true;
         pauseMusic();
-        destroySpotifyPlayer();
+        clearTrackEndTimer();
       }
       updateMusicBtn();
     }
