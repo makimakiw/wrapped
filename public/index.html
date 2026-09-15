@@ -791,6 +791,17 @@
       pointer-events: none;
     }
 
+    .music-fade-veil {
+      position: fixed;
+      inset: 0;
+      z-index: 35;
+      pointer-events: none;
+      opacity: 0;
+      background:
+        radial-gradient(ellipse 80% 55% at 50% 100%, rgba(0, 0, 0, 0.62) 0%, transparent 72%),
+        radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 0.18) 0%, transparent 68%);
+    }
+
     .nav-hint {
       font-size: 10px;
       letter-spacing: 0.12em;
@@ -960,6 +971,7 @@
       <button type="button" class="sources-btn" id="toggleSources" hidden>Datakällor</button>
     </div>
     <div class="spotify-player-host" id="spotifyEmbedHost" aria-hidden="true"></div>
+    <div class="music-fade-veil" id="musicFadeVeil" aria-hidden="true"></div>
   </div>
 
   <div class="sources-backdrop" id="sourcesBackdrop" aria-hidden="true">
@@ -1028,6 +1040,10 @@
     let musicPlaying = false;
     let currentTrackUri = null;
     let spotifyBooting = false;
+    let advancingTrack = false;
+    let trackEndTimer = null;
+    let lastAdvanceAt = 0;
+    let lastPlayback = { position: 0, duration: 0, isPaused: true };
 
     /* ── Particles ── */
     (function initParticles() {
@@ -1151,11 +1167,20 @@
       else window.__spotifyReadyQueue.push(fn);
     }
 
+    function clearTrackEndTimer() {
+      if (trackEndTimer) {
+        clearTimeout(trackEndTimer);
+        trackEndTimer = null;
+      }
+    }
+
     function destroySpotifyPlayer() {
+      clearTrackEndTimer();
       document.getElementById("spotifyEmbedHost").innerHTML = "";
       spotifyController = null;
       spotifyBooting = false;
       musicPlaying = false;
+      advancingTrack = false;
     }
 
     function ensureSpotifyPlayer(onReady) {
@@ -1180,14 +1205,7 @@
           (controller) => {
             spotifyController = controller;
             spotifyBooting = false;
-            controller.addListener("playback_started", () => {
-              musicPlaying = true;
-              updateMusicBtn();
-            });
-            controller.addListener("playback_update", (e) => {
-              musicPlaying = !e.data.isPaused;
-              updateMusicBtn();
-            });
+            attachSpotifyListeners(controller);
             onReady?.();
           }
         );
@@ -1198,12 +1216,80 @@
       return trackUris[Math.floor(Math.random() * trackUris.length)];
     }
 
-    function loadAndPlayTrack(uri) {
+    function pickNextTrackUri(excludeUri) {
+      if (trackUris.length <= 1) return trackUris[0];
+      let next = excludeUri;
+      let guard = 0;
+      while (next === excludeUri && guard++ < 12) {
+        next = pickRandomTrackUri();
+      }
+      return next;
+    }
+
+    function scheduleTrackEndTimer(position, duration, isPaused) {
+      clearTrackEndTimer();
+      if (musicMuted || advancingTrack || isPaused || !duration) return;
+      const remaining = Math.max(duration - position, 2500);
+      trackEndTimer = setTimeout(advanceToNextTrack, remaining + 350);
+    }
+
+    function attachSpotifyListeners(controller) {
+      controller.addListener("playback_started", () => {
+        musicPlaying = true;
+        updateMusicBtn();
+        scheduleTrackEndTimer(lastPlayback.position, lastPlayback.duration, false);
+      });
+      controller.addListener("playback_update", (e) => {
+        const { position, duration, isPaused } = e.data;
+        lastPlayback = { position, duration, isPaused };
+        musicPlaying = !isPaused;
+        updateMusicBtn();
+        if (musicMuted || advancingTrack) return;
+        if (duration > 0 && !isPaused && position >= duration - 1200) {
+          advanceToNextTrack();
+          return;
+        }
+        scheduleTrackEndTimer(position, duration, isPaused);
+      });
+    }
+
+    function advanceToNextTrack() {
+      if (musicMuted || advancingTrack || !spotifyController) return;
+      const now = Date.now();
+      if (now - lastAdvanceAt < 2200) return;
+      advancingTrack = true;
+      lastAdvanceAt = now;
+      clearTrackEndTimer();
+
+      const veil = document.getElementById("musicFadeVeil");
+      gsap.killTweensOf(veil);
+      gsap.to(veil, {
+        opacity: 1,
+        duration: 0.42,
+        ease: "power2.inOut",
+        onComplete: () => {
+          currentTrackUri = pickNextTrackUri(currentTrackUri);
+          loadAndPlayTrack(currentTrackUri, { skipFade: true });
+          gsap.to(veil, {
+            opacity: 0,
+            duration: 0.75,
+            delay: 0.12,
+            ease: "power2.out",
+            onComplete: () => { advancingTrack = false; },
+          });
+        },
+      });
+    }
+
+    function loadAndPlayTrack(uri, opts = {}) {
       if (!uri || !spotifyController) return;
+      currentTrackUri = uri;
+      lastPlayback = { position: 0, duration: 0, isPaused: true };
       spotifyController.loadUri(uri);
       if (!musicMuted) {
         window.setTimeout(() => {
           try { spotifyController.play(); } catch (_) {}
+          if (!opts.skipFade) scheduleTrackEndTimer(0, 30500, false);
         }, 400);
       }
     }
