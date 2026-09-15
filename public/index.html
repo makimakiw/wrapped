@@ -786,20 +786,9 @@
       width: 0;
       height: 0;
       overflow: hidden;
-      clip: rect(0 0 0 0);
-      clip-path: inset(50%);
       opacity: 0;
+      visibility: hidden;
       pointer-events: none;
-    }
-
-    .spotify-player-host iframe {
-      position: absolute !important;
-      left: -9999px !important;
-      top: -9999px !important;
-      width: 1px !important;
-      height: 1px !important;
-      opacity: 0 !important;
-      pointer-events: none !important;
     }
 
     .nav-hint {
@@ -1035,9 +1024,10 @@
     let started = false;
     let trackUris = [];
     let spotifyController = null;
-    let musicMuted = false;
+    let musicMuted = true;
     let musicPlaying = false;
-    let pendingTrackUri = null;
+    let currentTrackUri = null;
+    let spotifyBooting = false;
 
     /* ── Particles ── */
     (function initParticles() {
@@ -1123,7 +1113,7 @@
       bindSources();
       bindRestart();
       bindMusic();
-      initSpotifyPlayer();
+      updateMusicBtn();
       if (window.lucide) lucide.createIcons();
     }
 
@@ -1161,19 +1151,35 @@
       else window.__spotifyReadyQueue.push(fn);
     }
 
-    function initSpotifyPlayer() {
+    function destroySpotifyPlayer() {
+      document.getElementById("spotifyEmbedHost").innerHTML = "";
+      spotifyController = null;
+      spotifyBooting = false;
+      musicPlaying = false;
+    }
+
+    function ensureSpotifyPlayer(onReady) {
       if (!trackUris.length) return;
+      if (spotifyController) {
+        onReady?.();
+        return;
+      }
+      if (spotifyBooting) return;
+      spotifyBooting = true;
       whenSpotifyReady((IFrameAPI) => {
-        if (spotifyController) return;
+        if (spotifyController) {
+          spotifyBooting = false;
+          onReady?.();
+          return;
+        }
+        const uri = currentTrackUri || pickRandomTrackUri();
+        currentTrackUri = uri;
         IFrameAPI.createController(
           document.getElementById("spotifyEmbedHost"),
-          {
-            uri: trackUris[0],
-            width: 280,
-            height: 80,
-          },
+          { uri, width: 1, height: 1 },
           (controller) => {
             spotifyController = controller;
+            spotifyBooting = false;
             controller.addListener("playback_started", () => {
               musicPlaying = true;
               updateMusicBtn();
@@ -1182,11 +1188,7 @@
               musicPlaying = !e.data.isPaused;
               updateMusicBtn();
             });
-            if (pendingTrackUri) {
-              const uri = pendingTrackUri;
-              pendingTrackUri = null;
-              loadAndPlayTrack(uri);
-            }
+            onReady?.();
           }
         );
       });
@@ -1206,15 +1208,6 @@
       }
     }
 
-    function playRandomTrack() {
-      if (!trackUris.length) return;
-      musicMuted = false;
-      updateMusicBtn();
-      const uri = pickRandomTrackUri();
-      if (spotifyController) loadAndPlayTrack(uri);
-      else pendingTrackUri = uri;
-    }
-
     function pauseMusic() {
       if (!spotifyController) return;
       try { spotifyController.pause(); } catch (_) {}
@@ -1223,15 +1216,15 @@
     }
 
     function toggleMusicMute() {
-      if (!spotifyController) return;
-      musicMuted = !musicMuted;
+      if (!trackUris.length) return;
       if (musicMuted) {
-        try { spotifyController.pause(); } catch (_) {}
-        musicPlaying = false;
+        musicMuted = false;
+        currentTrackUri = pickRandomTrackUri();
+        ensureSpotifyPlayer(() => loadAndPlayTrack(currentTrackUri));
       } else {
-        try {
-          spotifyController.resume ? spotifyController.resume() : spotifyController.play();
-        } catch (_) {}
+        musicMuted = true;
+        pauseMusic();
+        destroySpotifyPlayer();
       }
       updateMusicBtn();
     }
@@ -1245,8 +1238,11 @@
 
     function restartStory() {
       if (animating) return;
+      musicMuted = true;
       pauseMusic();
-      musicMuted = false;
+      destroySpotifyPlayer();
+      currentTrackUri = null;
+      updateMusicBtn();
       started = false;
       showSlide(0, index > 0 ? -1 : 0);
     }
@@ -1255,7 +1251,6 @@
       if (started) return;
       started = true;
       updateNavLock();
-      playRandomTrack();
       go(1);
     }
 
