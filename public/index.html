@@ -11,15 +11,6 @@
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
-  <script>
-    window.__spotifyReadyQueue = [];
-    window.onSpotifyIframeApiReady = function (IFrameAPI) {
-      window.__spotifyIFrameAPI = IFrameAPI;
-      window.__spotifyReadyQueue.forEach((fn) => fn(IFrameAPI));
-      window.__spotifyReadyQueue = [];
-    };
-  </script>
-  <script src="https://open.spotify.com/embed/iframe-api/v1" async></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -783,28 +774,6 @@
       pointer-events: none;
     }
 
-    .spotify-player-host {
-      position: fixed;
-      left: -9999px;
-      top: 0;
-      width: 320px;
-      height: 88px;
-      overflow: hidden;
-      opacity: 0;
-      pointer-events: none;
-    }
-
-    .music-fade-veil {
-      position: fixed;
-      inset: 0;
-      z-index: 35;
-      pointer-events: none;
-      opacity: 0;
-      background:
-        radial-gradient(ellipse 80% 55% at 50% 100%, rgba(0, 0, 0, 0.62) 0%, transparent 72%),
-        radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 0.18) 0%, transparent 68%);
-    }
-
     .nav-hint {
       font-size: 10px;
       letter-spacing: 0.12em;
@@ -973,8 +942,6 @@
       <div class="nav-hint hidden" id="navHint">Tryck eller svep · mellanslag</div>
       <button type="button" class="sources-btn" id="toggleSources" hidden>Datakällor</button>
     </div>
-    <div class="spotify-player-host" id="spotifyEmbedHost" aria-hidden="true"></div>
-    <div class="music-fade-veil" id="musicFadeVeil" aria-hidden="true"></div>
   </div>
 
   <div class="sources-backdrop" id="sourcesBackdrop" aria-hidden="true">
@@ -1039,14 +1006,22 @@
 
     let data, slides = [], index = 0, animating = false, slideEpoch = 0;
     let started = false;
-    let trackUris = [];
-    let spotifyController = null;
+    let musicTracks = [];
+    let audioEl = null;
     let musicMuted = true;
     let musicPlaying = false;
-    let currentTrackUri = null;
-    let spotifyBooting = false;
-    let pendingMusicReady = null;
-    let lastPlayback = { position: 0, duration: 0, isPaused: true };
+    let currentTrack = null;
+
+    function normalizeMusicTracks(raw) {
+      if (!raw?.length) return [];
+      return raw
+        .map((t) => {
+          if (typeof t === "string") return null;
+          if (t?.preview && t?.uri) return { uri: t.uri, preview: t.preview };
+          return null;
+        })
+        .filter(Boolean);
+    }
 
     /* ── Particles ── */
     (function initParticles() {
@@ -1125,7 +1100,7 @@
       document.getElementById("toggleSources").hidden = false;
       document.getElementById("loader").classList.add("hide");
       document.getElementById("app").classList.remove("fx-hidden");
-      trackUris = data.music?.tracks ?? [];
+      musicTracks = normalizeMusicTracks(data.music?.tracks ?? []);
       renderProgress();
       bindNav();
       bindSources();
@@ -1152,7 +1127,7 @@
       document.getElementById("stage").classList.toggle("nav-locked", locked);
       document.getElementById("navHint").classList.toggle("hidden", locked);
       document.getElementById("restartBtn").classList.toggle("hidden", !started && index === 0);
-      document.getElementById("musicBtn").classList.toggle("hidden", !trackUris.length);
+      document.getElementById("musicBtn").classList.toggle("hidden", !musicTracks.length);
     }
 
     function updateMusicBtn() {
@@ -1166,122 +1141,60 @@
       if (window.lucide) lucide.createIcons();
     }
 
-    function whenSpotifyReady(fn) {
-      if (window.__spotifyIFrameAPI) fn(window.__spotifyIFrameAPI);
-      else window.__spotifyReadyQueue.push(fn);
-    }
-
-    function destroySpotifyPlayer() {
-      document.getElementById("spotifyEmbedHost").innerHTML = "";
-      spotifyController = null;
-      spotifyBooting = false;
-      musicPlaying = false;
-    }
-
-    function ensureSpotifyPlayer(onReady) {
-      if (!trackUris.length) return;
-      if (spotifyController) {
-        onReady?.();
-        return;
+    function ensureAudio() {
+      if (!audioEl) {
+        audioEl = new Audio();
+        audioEl.addEventListener("playing", () => {
+          musicPlaying = true;
+          updateMusicBtn();
+        });
+        audioEl.addEventListener("pause", () => {
+          musicPlaying = false;
+          updateMusicBtn();
+        });
+        audioEl.addEventListener("ended", () => {
+          musicPlaying = false;
+          updateMusicBtn();
+        });
       }
-      if (spotifyBooting) {
-        pendingMusicReady = onReady;
-        return;
-      }
-      spotifyBooting = true;
-      const bootTimeout = window.setTimeout(() => {
-        if (!spotifyController) spotifyBooting = false;
-      }, 12000);
-
-      whenSpotifyReady((IFrameAPI) => {
-        if (spotifyController) {
-          window.clearTimeout(bootTimeout);
-          spotifyBooting = false;
-          onReady?.();
-          return;
-        }
-        const uri = currentTrackUri || pickRandomTrackUri();
-        currentTrackUri = uri;
-        IFrameAPI.createController(
-          document.getElementById("spotifyEmbedHost"),
-          { uri, width: 320, height: 88 },
-          (controller) => {
-            window.clearTimeout(bootTimeout);
-            spotifyController = controller;
-            spotifyBooting = false;
-            attachSpotifyListeners(controller);
-            onReady?.();
-            if (pendingMusicReady) {
-              const cb = pendingMusicReady;
-              pendingMusicReady = null;
-              cb();
-            }
-          }
-        );
-      });
+      return audioEl;
     }
 
-    function pickRandomTrackUri() {
-      return trackUris[Math.floor(Math.random() * trackUris.length)];
+    function pickRandomTrack() {
+      return musicTracks[Math.floor(Math.random() * musicTracks.length)];
     }
 
-    function attachSpotifyListeners(controller) {
-      controller.addListener("playback_started", () => {
-        musicPlaying = true;
-        updateMusicBtn();
-      });
-      controller.addListener("playback_update", (e) => {
-        const { position, duration, isPaused } = e.data;
-        lastPlayback = { position, duration, isPaused };
-        musicPlaying = !isPaused;
+    function playMusic() {
+      if (!musicTracks.length || musicMuted) return;
+      const track = currentTrack?.preview ? currentTrack : pickRandomTrack();
+      if (!track?.preview) return;
+      currentTrack = track;
+      const audio = ensureAudio();
+      if (audio.src !== track.preview) audio.src = track.preview;
+      audio.play().catch(() => {
+        musicPlaying = false;
         updateMusicBtn();
       });
     }
 
-    function tryPlay() {
-      if (!spotifyController || musicMuted) return;
-      try {
-        if (spotifyController.resume) spotifyController.resume();
-        else spotifyController.play();
-      } catch (_) {
-        try { spotifyController.play(); } catch (_) {}
+    function stopMusic() {
+      if (audioEl) {
+        audioEl.pause();
+        audioEl.currentTime = 0;
       }
-    }
-
-    function loadAndPlayTrack(uri) {
-      if (!uri || !spotifyController) return;
-      currentTrackUri = uri;
-      lastPlayback = { position: 0, duration: 0, isPaused: true };
-      spotifyController.loadUri(uri);
-      if (!musicMuted) {
-        window.setTimeout(tryPlay, 500);
-        window.setTimeout(tryPlay, 1200);
-      }
-    }
-
-    function pauseMusic() {
-      if (!spotifyController) return;
-      try { spotifyController.pause(); } catch (_) {}
       musicPlaying = false;
       updateMusicBtn();
     }
 
     function toggleMusicMute() {
-      if (!trackUris.length) return;
+      if (!musicTracks.length) return;
       if (musicMuted) {
         musicMuted = false;
-        updateMusicBtn();
-        if (!currentTrackUri) currentTrackUri = pickRandomTrackUri();
-        ensureSpotifyPlayer(() => {
-          if (spotifyController && currentTrackUri) {
-            loadAndPlayTrack(currentTrackUri);
-          } else {
-            tryPlay();
-          }
-        });
+        if (!currentTrack) currentTrack = pickRandomTrack();
+        playMusic();
       } else {
         musicMuted = true;
-        pauseMusic();
+        stopMusic();
       }
       updateMusicBtn();
     }
@@ -1362,9 +1275,8 @@
 
     function restartStory() {
       musicMuted = true;
-      pauseMusic();
-      destroySpotifyPlayer();
-      currentTrackUri = null;
+      stopMusic();
+      currentTrack = null;
       updateMusicBtn();
       started = false;
       mountSlideInstant(0);
