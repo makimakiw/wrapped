@@ -170,16 +170,17 @@
       align-items: center;
       justify-content: center;
       width: 100%;
-      padding: 8px 20px max(16px, env(safe-area-inset-bottom));
+      padding: 8px 20px 12px;
       min-height: 0;
     }
 
     .content-frame-inner {
       width: 100%;
       max-width: min(460px, 100%);
-      max-height: min(720px, calc(100dvh - 108px));
+      max-height: 100%;
       overflow-y: auto;
       overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
       padding: clamp(24px, 5vw, 36px) clamp(20px, 4vw, 32px);
       border-radius: 32px;
       background: rgba(8, 6, 14, 0.52);
@@ -201,13 +202,35 @@
     }
 
     @media (max-width: 480px) {
-      .content-frame {
-        padding-left: 14px;
-        padding-right: 14px;
+      .slide {
+        justify-content: flex-start;
       }
+
+      .content-frame {
+        align-items: flex-start;
+        justify-content: flex-start;
+        padding: 2px 14px 8px;
+      }
+
       .content-frame-inner {
         border-radius: 26px;
-        max-height: calc(100dvh - 96px);
+        padding: clamp(20px, 4.5vw, 28px) clamp(16px, 4vw, 24px);
+      }
+
+      .icon-hero {
+        width: clamp(64px, 18vw, 80px);
+        height: clamp(64px, 18vw, 80px);
+        margin-bottom: 10px;
+      }
+
+      .detail-text {
+        margin-top: 14px;
+        font-size: 0.88rem;
+      }
+
+      .footer-dock {
+        gap: 10px;
+        padding-top: 4px;
       }
     }
 
@@ -805,15 +828,17 @@
     .tap-zones div { flex: 1; }
 
     .footer-dock {
-      position: fixed;
-      bottom: max(12px, env(safe-area-inset-bottom));
-      left: 50%;
-      transform: translateX(-50%);
+      position: relative;
       z-index: 40;
+      flex-shrink: 0;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 14px;
+      gap: 12px;
+      padding: 6px 20px max(12px, env(safe-area-inset-bottom));
+      width: 100%;
+      max-width: 520px;
+      margin: 0 auto;
     }
 
     .music-btn {
@@ -1019,7 +1044,7 @@
       <button type="button" class="music-btn hidden" id="musicBtn" aria-label="Ljud av" title="Ljud av">
         <i data-lucide="volume-2"></i>
       </button>
-      <div class="nav-hint hidden" id="navHint">Tryck eller svep · mellanslag</div>
+      <div class="nav-hint hidden" id="navHint">Svep eller tryck · mellanslag</div>
       <button type="button" class="sources-btn" id="toggleSources" hidden>Datakällor</button>
     </div>
   </div>
@@ -1785,12 +1810,31 @@
     }
 
     function bindNav() {
-      document.getElementById("stage").addEventListener("click", (e) => {
+      const stage = document.getElementById("stage");
+      let touchStartX = 0;
+      let touchStartY = 0;
+
+      stage.addEventListener("click", (e) => {
         if (e.target.closest(".tap-cta")) return;
         if (index === 0 && !started) return;
         const r = e.currentTarget.getBoundingClientRect();
         go(e.clientX - r.left < r.width / 2 ? -1 : 1);
       });
+
+      stage.addEventListener("touchstart", (e) => {
+        if (index === 0 && !started) return;
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+      }, { passive: true });
+
+      stage.addEventListener("touchend", (e) => {
+        if (index === 0 && !started) return;
+        const dx = e.changedTouches[0].clientX - touchStartX;
+        const dy = e.changedTouches[0].clientY - touchStartY;
+        if (Math.abs(dx) < 48 || Math.abs(dx) < Math.abs(dy) * 1.2) return;
+        go(dx < 0 ? 1 : -1);
+      }, { passive: true });
+
       document.addEventListener("keydown", (e) => {
         if (index === 0 && !started) return;
         if (e.key === "ArrowRight" || e.key === " ") { e.preventDefault(); go(1); }
