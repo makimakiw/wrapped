@@ -270,14 +270,30 @@
       }
 
       .content-frame {
-        align-items: flex-start;
-        justify-content: flex-start;
-        padding: 2px 14px 8px;
+        flex: 1;
+        align-items: stretch;
+        justify-content: stretch;
+        padding: 4px 14px 10px;
+        min-height: 0;
       }
 
       .content-frame-inner {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        min-height: 0;
+        max-height: none;
         border-radius: 26px;
-        padding: clamp(20px, 4.5vw, 28px) clamp(16px, 4vw, 24px);
+        padding: clamp(22px, 5vw, 32px) clamp(16px, 4vw, 24px);
+        box-shadow:
+          0 0 0 1px rgba(255, 255, 255, 0.05) inset,
+          0 0 48px color-mix(in srgb, var(--accent, #1ed760) 14%, transparent);
+      }
+
+      .content-frame-inner .slide-body {
+        flex: 1;
+        justify-content: center;
       }
 
       .icon-hero {
@@ -292,6 +308,7 @@
       }
 
       .footer-dock {
+        flex-shrink: 0;
         gap: 10px;
         padding-top: 4px;
       }
