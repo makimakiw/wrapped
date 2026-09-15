@@ -1036,7 +1036,7 @@
       teams_quote: "quote",
     };
 
-    let data, slides = [], index = 0, animating = false;
+    let data, slides = [], index = 0, animating = false, slideEpoch = 0;
     let started = false;
     let trackUris = [];
     let spotifyController = null;
@@ -1327,26 +1327,81 @@
       });
     }
 
+    function bumpSlideEpoch() {
+      slideEpoch += 1;
+      return slideEpoch;
+    }
+
     function forceSlideReset() {
+      bumpSlideEpoch();
       animating = false;
       const stage = document.getElementById("stage");
       if (!stage) return;
-      gsap.killTweensOf(stage.querySelectorAll(".slide, .slide *"));
+      gsap.killTweensOf(stage);
+      gsap.killTweensOf(stage.querySelectorAll("*"));
       stage.querySelectorAll(".slide").forEach((el) => el.remove());
     }
 
+    function createSlideElement(slide, theme) {
+      const el = document.createElement("div");
+      el.className = `slide ${slide.type}${slide.card?.variant ? " " + slide.card.variant + "-layout" : ""}`;
+      el.style.setProperty("--c1", theme.c1);
+      el.style.setProperty("--c2", theme.c2);
+      el.style.setProperty("--c3", theme.c3);
+      el.style.setProperty("--accent", theme.accent);
+      el.innerHTML = `
+        <div class="slide-bg"></div>
+        <div class="slide-noise"></div>
+        <div class="slide-vignette"></div>
+        <div class="content-frame">
+          <div class="content-frame-inner">
+            ${renderSlideHtml(slide, theme)}
+          </div>
+        </div>
+      `;
+      return el;
+    }
+
+    function mountSlideInstant(i) {
+      const epoch = bumpSlideEpoch();
+      animating = false;
+      const stage = document.getElementById("stage");
+      if (!stage) return;
+      gsap.killTweensOf(stage);
+      gsap.killTweensOf(stage.querySelectorAll("*"));
+      stage.querySelectorAll(".slide").forEach((el) => el.remove());
+
+      index = i;
+      renderProgress();
+      const slide = slides[i];
+      if (!slide) return;
+      const theme = THEMES[themeKey(slide)] ?? THEMES.intro;
+      const el = createSlideElement(slide, theme);
+      stage.appendChild(el);
+
+      gsap.set(el, { opacity: 1 });
+      gsap.set(el.querySelector(".slide-bg"), { opacity: 0.85, scale: 1 });
+      gsap.set(el.querySelector(".content-frame-inner"), {
+        opacity: 1, y: 0, scale: 1, filter: "blur(0px)",
+      });
+
+      if (epoch !== slideEpoch) {
+        el.remove();
+        return;
+      }
+
+      runSlideAnim(el, slide, theme, false);
+      updateNavLock();
+    }
+
     function restartStory() {
-      forceSlideReset();
       musicMuted = true;
       pauseMusic();
       destroySpotifyPlayer();
       currentTrackUri = null;
       updateMusicBtn();
       started = false;
-      index = 0;
-      renderProgress();
-      showSlide(0, 0);
-      updateNavLock();
+      mountSlideInstant(0);
     }
 
     function startStory() {
@@ -1374,6 +1429,7 @@
     }
 
     function showSlide(i, dir) {
+      const epoch = bumpSlideEpoch();
       index = i;
       renderProgress();
       const slide = slides[i];
@@ -1386,23 +1442,8 @@
       if (isTransition) animating = true;
 
       const mountAndEnter = () => {
-        const el = document.createElement("div");
-        el.className = `slide ${slide.type}${slide.card?.variant ? " " + slide.card.variant + "-layout" : ""}`;
-        el.style.setProperty("--c1", theme.c1);
-        el.style.setProperty("--c2", theme.c2);
-        el.style.setProperty("--c3", theme.c3);
-        el.style.setProperty("--accent", theme.accent);
-        el.innerHTML = `
-          <div class="slide-bg"></div>
-          <div class="slide-noise"></div>
-          <div class="slide-vignette"></div>
-          <div class="content-frame">
-            <div class="content-frame-inner">
-              ${renderSlideHtml(slide, theme)}
-            </div>
-          </div>
-        `;
-
+        if (epoch !== slideEpoch) return;
+        const el = createSlideElement(slide, theme);
         stage.appendChild(el);
 
         const inner = el.querySelector(".content-frame-inner");
@@ -1422,7 +1463,13 @@
           filter: "blur(0px)",
           duration: 0.52,
           ease: "back.out(1.12)",
-          onComplete: () => runSlideAnim(el, slide, theme, isTransition),
+          onComplete: () => {
+            if (epoch !== slideEpoch) {
+              el.remove();
+              return;
+            }
+            runSlideAnim(el, slide, theme, isTransition);
+          },
         });
 
         updateNavLock();
@@ -1443,6 +1490,7 @@
           duration: 0.28,
           ease: "power2.in",
           onComplete: () => {
+            if (epoch !== slideEpoch) return;
             old.remove();
             mountAndEnter();
           },
