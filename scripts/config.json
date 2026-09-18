@@ -6,18 +6,17 @@
   "teams": {
     "scanAllTeams": true,
     "scanGroupChats": true,
-    "excludePatterns": ["warchief"]
+    "excludePatterns": [
+      "warchief"
+    ]
   },
   "timezone": "Europe/Stockholm",
   "spotify": {
     "playlistId": "1rBL2DEwVfa12UHVU1YvF4",
     "playlistUrl": "https://open.spotify.com/playlist/1rBL2DEwVfa12UHVU1YvF4?si=f47a1145f4004d92"
   },
-  "period": {
-    "from": "2026-09-15",
-    "to": "2026-09-18",
-    "label": "15–18 september 2026"
-  },
+  "periodMode": "auto",
+  "periodDays": 7,
   "nameOverrides": {
     "Schultzan": "Alexander Schultz",
     "PalArvei": "Pål Arvei",
@@ -31,5 +30,12 @@
     "Dmitrijv": "Dmitrij Velström",
     "truls27a": "Truls Borgvall",
     "makimakiw": "Max Wroblewski"
+  },
+  "period": {
+    "from": "2026-09-12",
+    "to": "2026-09-18",
+    "label": "12–18 september 2026",
+    "days": 7,
+    "timezone": "Europe/Stockholm"
   }
 }
