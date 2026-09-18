@@ -11,6 +11,7 @@ import { createNameResolver, createTimeHelpers } from "./lib/names.mjs";
 import { fetchTeams } from "./lib/teams.mjs";
 import { computeTrakkaStats, fetchTrakka } from "./lib/trakka.mjs";
 import { fetchSpotifyPlaylist } from "./lib/spotify.mjs";
+import { computeRollingPeriod } from "./lib/period.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");
@@ -38,7 +39,13 @@ function loadDotEnv() {
 loadDotEnv();
 
 const config = JSON.parse(readFileSync(join(__dirname, "config.json"), "utf8"));
-const period = config.period;
+const period =
+  config.periodMode === "auto"
+    ? computeRollingPeriod({
+        days: config.periodDays ?? 7,
+        timezone: config.timezone ?? "Europe/Stockholm",
+      })
+    : config.period;
 
 mkdirSync(join(ROOT, "data"), { recursive: true });
 mkdirSync(join(ROOT, "public/data"), { recursive: true });

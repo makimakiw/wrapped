@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.thirdact.weekly-wrap</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>-lc</string>
+    <string>cd "/Users/maxwroblewski/Cursor-projects/third-act-weekly-wrap" &amp;&amp; npm run weekly >> "$HOME/Library/Logs/thirdact-weekly-wrap.log" 2>&amp;1</string>
+  </array>
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Weekday</key>
+    <integer>5</integer>
+    <key>Hour</key>
+    <integer>9</integer>
+    <key>Minute</key>
+    <integer>0</integer>
+  </dict>
+  <key>StandardOutPath</key>
+  <string>/Users/maxwroblewski/Library/Logs/thirdact-weekly-wrap.stdout.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/maxwroblewski/Library/Logs/thirdact-weekly-wrap.stderr.log</string>
+</dict>
+</plist>

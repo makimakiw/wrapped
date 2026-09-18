@@ -15,9 +15,28 @@ Spotify Wrapped-stil sammanfattning av Third Acts vecka — rolig design, riktig
 ## Snabbstart
 
 ```bash
-npm run fetch    # ~2.5 min
+npm run fetch    # ~2.5 min (senaste 7 dagarna, inkl. helg)
 npm run serve    # http://localhost:3456
 ```
+
+## Veckovis uppdatering (fredagar 09:00)
+
+Data hämtas **inte** automatiskt från Vercel — perioden räknas som rullande **7 dagar** (inkl. lördag/söndag) i `Europe/Stockholm`.
+
+```bash
+npm run weekly   # fetch + commit + push + Vercel deploy
+```
+
+**Mac (rekommenderat)** — kör med dina lokala `gh` / Trakka / M365 / Azure-credentials:
+
+```bash
+cp scripts/com.thirdact.weekly-wrap.plist ~/Library/LaunchAgents/
+launchctl load ~/Library/LaunchAgents/com.thirdact.weekly-wrap.plist
+```
+
+Logg: `~/Library/Logs/thirdact-weekly-wrap.log`
+
+**GitHub Actions (valfritt)** — workflow `.github/workflows/weekly-wrap.yml` körs fredagar 07:00 UTC (= 09:00 svensk sommartid). Kräver repo-secrets: `GH_TOKEN`, `AZURE_DEVOPS_EXT_PAT`, `CURSOR_API_KEY`, ev. `TRAKKA_TOKEN`, `VERCEL_TOKEN`.
 
 ## Azure (automatiskt om du git-clonat från Azure)
 

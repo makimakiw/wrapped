@@ -5,6 +5,7 @@
   "description": "Spotify Wrapped-style weekly summary for Third Act",
   "scripts": {
     "fetch": "node scripts/build.mjs",
+    "weekly": "node scripts/weekly-refresh.mjs",
     "serve": "npx --yes serve public -p 3456",
     "teams:login": "bash scripts/teams-login.sh"
   },
