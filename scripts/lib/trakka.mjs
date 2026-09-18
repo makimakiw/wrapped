@@ -32,6 +32,8 @@ export function computeTrakkaStats(trk, { from, to }) {
   const customerHoursByClient = new Map();
   const internalHoursByPerson = new Map();
   const projectsByPerson = new Map();
+  const projectHoursByPerson = new Map();
+  const clientHoursByPerson = new Map();
   const daysByPerson = new Map();
 
   for (const e of trk.entries) {
@@ -55,6 +57,11 @@ export function computeTrakkaStats(trk, { from, to }) {
           clientName,
           (customerHoursByClient.get(clientName) ?? 0) + e.hours
         );
+        if (!clientHoursByPerson.has(e.personName)) {
+          clientHoursByPerson.set(e.personName, new Map());
+        }
+        const byClient = clientHoursByPerson.get(e.personName);
+        byClient.set(clientName, (byClient.get(clientName) ?? 0) + e.hours);
       } else if (e.client) {
         internalHoursByPerson.set(
           e.personName,
@@ -66,6 +73,11 @@ export function computeTrakkaStats(trk, { from, to }) {
         hoursByProject.set(e.item.name, (hoursByProject.get(e.item.name) ?? 0) + e.hours);
         if (!projectsByPerson.has(e.personName)) projectsByPerson.set(e.personName, new Set());
         projectsByPerson.get(e.personName).add(e.item.name);
+        if (!projectHoursByPerson.has(e.personName)) {
+          projectHoursByPerson.set(e.personName, new Map());
+        }
+        const byProject = projectHoursByPerson.get(e.personName);
+        byProject.set(e.item.name, (byProject.get(e.item.name) ?? 0) + e.hours);
       }
     }
   }
@@ -77,6 +89,8 @@ export function computeTrakkaStats(trk, { from, to }) {
     customerHoursByClient,
     internalHoursByPerson,
     projectsByPerson,
+    projectHoursByPerson,
+    clientHoursByPerson,
     daysByPerson,
     workDays,
   };

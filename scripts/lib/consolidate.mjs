@@ -19,6 +19,65 @@ function normName(name) {
   return String(name).toLowerCase().replace(/\s+/g, " ").trim();
 }
 
+const ORG_ACCOUNT = /^(thirdactse|third-act|thirdact)$/i;
+
+function isOrgAccount(name) {
+  return ORG_ACCOUNT.test(String(name ?? "").replace(/\s/g, ""));
+}
+
+function topForPerson(personMap, personName) {
+  const map = personMap?.get(personName);
+  if (!map?.size) return null;
+  return top(map);
+}
+
+function formatNameList(names, max = 4) {
+  const list = names.filter(Boolean);
+  if (!list.length) return "";
+  if (list.length <= max) return list.join(", ");
+  return `${list.slice(0, max).join(", ")} …`;
+}
+
+function buildNewProjectsCard(projects) {
+  const repos = projects?.repos ?? [];
+  const byPerson = new Map();
+
+  for (const repo of repos) {
+    const author = repo.author && !isOrgAccount(repo.author) ? repo.author : null;
+    if (!author) continue;
+    if (!byPerson.has(author)) byPerson.set(author, []);
+    byPerson.get(author).push(repo.name);
+  }
+
+  const ranked = [...byPerson.entries()].sort((a, b) => b[1].length - a[1].length);
+  const unassigned = repos
+    .filter((r) => !r.author || isOrgAccount(r.author))
+    .map((r) => r.name);
+
+  const projectTotal = projects?.total ?? repos.length;
+  if (!projectTotal) return null;
+
+  if (ranked.length) {
+    const [winner, winnerRepos] = ranked[0];
+    const detailParts = [`${formatNameList(winnerRepos)}`];
+    for (const [name, names] of ranked.slice(1, 3)) {
+      detailParts.push(`${name}: ${formatNameList(names, 3)}`);
+    }
+    if (unassigned.length) {
+      detailParts.push(formatNameList(unassigned, 3));
+    }
+    return {
+      winner,
+      detail: detailParts.filter(Boolean).join(" · "),
+    };
+  }
+
+  return {
+    winner: "Teamet",
+    detail: formatNameList(repos.map((r) => r.name)) || `${projectTotal} nya repos`,
+  };
+}
+
 function combinePeople(ghMerges, ghOpens, azurePrs, fmtName) {
   const byKey = new Map();
 
@@ -305,7 +364,7 @@ function buildPool({ gh, az, trk, teams, cursor, projects, fmtName, org }) {
 
   if (trkStats?.workHoursByPerson?.size) {
     const [name, hours] = top(trkStats.workHoursByPerson);
-    const projectTop = top(trkStats.hoursByProject);
+    const personProject = topForPerson(trkStats.projectHoursByPerson, name);
     push({
       section: "tid",
       anchor: true,
@@ -318,8 +377,8 @@ function buildPool({ gh, az, trk, teams, cursor, projects, fmtName, org }) {
         winner: name,
         stat: hours,
         statLabel: "timmar",
-        detail: projectTop
-          ? `Största projekt: ${projectTop[0]} (${projectTop[1]}h)`
+        detail: personProject
+          ? `Mest tid på: ${personProject[0]} (${personProject[1]}h)`
           : "Trakka har koll",
         source: "trakka",
         section: "tid",
@@ -329,11 +388,7 @@ function buildPool({ gh, az, trk, teams, cursor, projects, fmtName, org }) {
 
   if (trkStats?.customerHoursByPerson?.size) {
     const [custName, custH] = top(trkStats.customerHoursByPerson);
-    const clientTop = top(trkStats.customerHoursByClient);
-    const teamCustTotal = [...trkStats.customerHoursByPerson.values()].reduce(
-      (sum, h) => sum + h,
-      0
-    );
+    const personClient = topForPerson(trkStats.clientHoursByPerson, custName);
     push({
       section: "tid",
       anchor: true,
@@ -341,14 +396,14 @@ function buildPool({ gh, az, trk, teams, cursor, projects, fmtName, org }) {
       card: makeCard({
         id: "customer_champion",
         emoji: "💰",
-        title: "Mest cash",
-        subtitle: "Dragit in mest den veckan",
+        title: "mest cash",
+        subtitle: "dragit in..",
         winner: custName,
         stat: custH,
         statLabel: "kundtimmar",
-        detail: clientTop
-          ? `${clientTop[0]} (${clientTop[1]}h) · teamet totalt ${teamCustTotal} kundtimmar`
-          : `Teamet loggade ${teamCustTotal} kundtimmar`,
+        detail: personClient
+          ? `Mest tid på: ${personClient[0]} (${personClient[1]}h)`
+          : `${custH} kundtimmar den veckan`,
         source: "trakka",
         section: "tid",
       }),
@@ -436,8 +491,7 @@ function buildPool({ gh, az, trk, teams, cursor, projects, fmtName, org }) {
   const repos = projects?.repos ?? [];
   const projectTotal = projects?.total ?? repos.length;
   if (projectTotal >= 1) {
-    const topCreator = top(projects.byAuthor);
-    const named = repos.filter((r) => r.author).slice(0, 2).map((r) => r.name);
+    const np = buildNewProjectsCard(projects);
     push({
       section: "kod",
       score: 84 + projectTotal * 10,
@@ -446,12 +500,10 @@ function buildPool({ gh, az, trk, teams, cursor, projects, fmtName, org }) {
         emoji: "🌱",
         title: "Nya projekt",
         subtitle: "Repos som föddes den veckan",
-        winner: topCreator ? topCreator[0] : named.join(", ") || "Teamet",
+        winner: np.winner,
         stat: projectTotal,
         statLabel: "repos",
-        detail: topCreator
-          ? `${topCreator[0]} startade ${topCreator[1]} · GitHub & Azure`
-          : `${projectTotal} nya repos · GitHub & Azure`,
+        detail: np.detail,
         source: ghSrc,
         section: "kod",
       }),
